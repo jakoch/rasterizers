@@ -1,0 +1,146 @@
+#
+# .github/workflows/build.yml
+#
+# Copyright 2024 Jens A. Koch.
+# SPDX-License-Identifier: MIT
+# This file is part of https://github.com/jakoch/rasterizers
+#
+
+name: "Build on Windows"
+
+on:
+  # You can manually run this workflow.
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  # This workflow runs on schedule: every Sunday at 1 am.
+  #schedule:
+  #  - cron: "0 1 * * 0"
+
+# needed by "softprops/action-gh-release"
+permissions:
+  contents: write
+
+# improve CI concurrency by automatically cancelling outdated jobs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+# ---------------------------------------------------------------------------------------
+
+  build-on-windows:
+
+# ---------------------------------------------------------------------------------------
+
+    name: "Windows VC17"
+    # https://github.com/actions/runner-images
+    runs-on: windows-2022
+
+    env:
+      BUILD_DIR:   ${{github.workspace}}\swiftshader\build
+      INSTALL_DIR: ${{github.workspace}}\swiftshader\install
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: 🤘 Checkout Code
+        uses: actions/checkout@v4 # https://github.com/actions/checkout
+        with:
+          repository: google/swiftshader
+          path: swiftshader
+
+      - name: 🛠️ Setup Visual Studio Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022
+      #- name: 🛠️ Setup Visual Studio Developer Command Prompt
+      #  run: call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+      #  shell: cmd
+
+      # https://community.chocolatey.org/packages/cmake
+      - name: 🔽 Install CMake
+        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+
+      # Reminder: This step requires that the CMakePresets for CI contain
+      # "CMAKE_CXX_COMPILER_LAUNCHER": "sccache".
+      - name: 🎯 Setup Build Cache
+        uses: hendrikmuhs/ccache-action@v1 # https://github.com/hendrikmuhs/ccache-action
+        with:
+          variant: sccache
+          key: cache-build-${{ github.ref }}
+          restore-keys: |
+            cache-build-${{ github.ref }}
+            cache-build-
+
+      - name: 🖋️ CMake ➔ Configure
+        run: |
+          cmake -S swiftshader -B ${{ env.BUILD_DIR }}  ^
+            -G Ninja                                    ^
+            -DCMAKE_BUILD_TYPE=Release                  ^
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache       ^
+            -DSWIFTSHADER_BUILD_VULKAN=ON               ^
+            -DSWIFTSHADER_BUILD_EGL=OFF                 ^
+            -DSWIFTSHADER_BUILD_GLESv2=OFF              ^
+            -DSWIFTSHADER_BUILD_GLES_CM=OFF             ^
+            -DSWIFTSHADER_BUILD_PVR=OFF                 ^
+            -DSWIFTSHADER_BUILD_TESTS=OFF
+
+      - name: 🙏 CMake ➔ Build
+        run: |
+          cmake --build ${{ env.BUILD_DIR }} --parallel --config Release --target vk_swiftshader
+
+      #- name: CMake ➔ Install
+      #  run: |
+      #    cmake --install ${{ env.BUILD_DIR }} --prefix ${{ env.INSTALL_DIR }} --verbose
+
+      - name: ❔ CHECK folders, to see if everything is present (after building & installing)
+        run: |
+          dir /S /B ${{ env.BUILD_DIR }}
+
+      # dir /S /B ${{ env.INSTALL_DIR }}
+      # Change back to INSTALL_DIR, when i figured out how to "cmake install" this crap.
+      # Well, after build, there is a folder "Windows"... lets package only that.
+
+      - name: 📝 Get Version of SwiftShader Library (Maj.Min.Patch.Rev)
+        shell: pwsh
+        run: |
+          $libraryPath = "${{ env.BUILD_DIR }}\Windows\vk_swiftshader.dll"
+          $versionInfo = (Get-Item $libraryPath).VersionInfo
+          $fileVersionRaw = $versionInfo.FileVersionRaw
+          Write-Output "FileVersionRaw: $fileVersionRaw"
+          echo "VERSION=$fileVersionRaw" >> $env:GITHUB_ENV
+
+      - name: 📝 Get Git commit shorthash
+        shell: pwsh
+        run: |
+          echo "SHORTHASH=$($env:GITHUB_SHA.substring(0,7))" >> $env:GITHUB_ENV
+
+      # Versioning Pattern: "swiftshader-5.0.0.0-a2s8ad3-win64.zip"
+      - name: 🏷️ Versionize Artifact
+        shell: pwsh
+        run: |
+          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-${{ env.VERSION }}-${{ env.SHORTHASH }}-win64" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-${{ env.VERSION }}-${{ env.SHORTHASH }}-win64.zip" >> $env:GITHUB_ENV
+
+      - name: 📦 Package
+        run: |
+          7z a -tzip -mx9 "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}" "${{ env.BUILD_DIR }}\Windows\*"
+
+      - name: 📦 🚀 Upload Artifact
+        uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
+        with:
+          name: ${{ env.SWIFTSHADER_ARTIFACT_NAME }}
+          path: ${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
+
+#- name: 📦 🚀 Release
+#  uses: softprops/action-gh-release@v2 https://github.com/softprops/action-gh-release
+#  with:
+#    files: swiftshader/build/swiftshader-win64.zip

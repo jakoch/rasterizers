@@ -1,0 +1,30 @@
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+insert_final_newline = true
+
+# "visual studio" specific
+spelling_languages = en-us
+guidelines = 80 dashed, 130
+
+[CMakeLists.txt, *.{cmake}]
+indent_size = 2
+
+[*.cmake]
+indent_size = 2
+
+[*.{c,cc,cpp,h,hpp,hxx,inl}]
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{json,yaml,yml}]
+indent_size = 2
+insert_final_newline = false
+
+[*.{md,markdown}]
+indent_size = 4
+trim_trailing_whitespace = false
+
+[*.{clang-format}]
+indent_size = 2
