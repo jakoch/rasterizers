@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 #
 # .github/workflows/build-mesa.yml
 #
@@ -41,24 +42,254 @@ jobs:
 # ---------------------------------------------------------------------------------------
 
     name: "Windows VC17"
+
     # https://github.com/actions/runner-images
+    # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md
     runs-on: windows-2022
 
     env:
-      MESA_VERSION_TAG: '24.1.3'
-      BUILD_DIR:   ${{github.workspace}}\mesa\build
-      INSTALL_DIR: ${{github.workspace}}\mesa\install
+      MESA_VERSION_TAG: 'mesa-24.1.3'
+      MESA_SOURCE_DIR:  ${{github.workspace}}\mesa
+      MESA_BUILD_DIR:   ${{github.workspace}}\mesa\build
+      MESA_INSTALL_DIR: ${{github.workspace}}\mesa\install
+      LLVM_VERSION:     '18.1.8'
+      LLVM_PROJECT_DIR: ${{github.workspace}}\llvm-project
+      LLVM_CMAKE_DIR:   ${{github.workspace}}\llvm-project\cmake
+      LLVM_SOURCE_DIR:  ${{github.workspace}}\llvm-project\llvm
+      LLVM_BUILD_DIR:   ${{github.workspace}}\llvm-project\llvm\build
+      LLVM_INSTALL_DIR: ${{github.workspace}}\llvm-project\llvm\install
+      DXSDK_DIR:        ${{github.workspace}}\directx
 
     defaults:
       run:
         shell: cmd
 
+    #
+    # Building Mesa
+    #
+    # https://docs.mesa3d.org/install.html + https://docs.mesa3d.org/meson.html
+    #
+    # Build Dependencies:
+    # 1. meson
+    # 2. winflexbison (bison, flex)
+    # 3. python packages: packaging, mako
+    # 4. llvm
+    # 5. directx-sdk
+    #
+    # Pre-installed on GHA
+    # - git, curl, 7z
+    # - cmake
+    # - python, pip
+    # - rustc
+    # - msvc VC17
+
     steps:
       - name: 🤘 Checkout Code
         uses: actions/checkout@v4 # https://github.com/actions/checkout
-        repository: https://gitlab.freedesktop.org/mesa/mesa.git
-        ref: {{ $env.MESA_VERSION_TAG }}
-        path: 'mesa'
+
+      - name: 🤘 Checkout Code - https://gitlab.freedesktop.org/mesa/mesa
+        run: |
+          git clone --depth 1 --branch ${{ env.MESA_VERSION_TAG }} https://gitlab.freedesktop.org/mesa/mesa.git mesa
 
       - name: 🛠️ Setup Visual Studio Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@v1 # https://github.com/ilammy/msvc-dev-cmd
+
+      # https://community.chocolatey.org/packages/cmake
+      - name: 🔽 Install CMake
+        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+
+      # Reminder: This step requires that the CMakePresets for CI contain
+      # "CMAKE_CXX_COMPILER_LAUNCHER": "sccache".
+      - name: 🎯 Setup Build Cache
+        uses: hendrikmuhs/ccache-action@v1 # https://github.com/hendrikmuhs/ccache-action
+        with:
+          variant: sccache
+          key: mesa-build-${{ github.ref }}
+          restore-keys: |
+            mesa-build-${{ github.ref }}
+            mesa-build-
+
+      - name: 🛠️ [LLVM] Make project folder
+        run: |
+          mkdir llvm-project
+
+      - name: 🔽 [LLVM] Install LLVM into llvm-project folder
+        working-directory: ${{ env.LLVM_PROJECT_DIR }}
+        run: |
+          curl -sfL -o llvm-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/llvm-${{ env.LLVM_VERSION }}.src.tar.xz
+          7z x -bb0 -txz llvm-${{ env.LLVM_VERSION }}.src.tar.xz
+          7z x -bb0 -ttar llvm-${{ env.LLVM_VERSION }}.src.tar
+          del llvm-${{ env.LLVM_VERSION }}.src.tar.xz
+          del llvm-${{ env.LLVM_VERSION }}.src.tar
+          mv llvm-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_SOURCE_DIR }}
+
+      - name: 🔽 [LLVM] Install CMAKE modules into llvm-project folder
+        working-directory: ${{ env.LLVM_PROJECT_DIR }}
+        run: |
+          curl -sfL -o cmake-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/cmake-${{ env.LLVM_VERSION }}.src.tar.xz
+          7z x -bb0 -txz cmake-${{ env.LLVM_VERSION }}.src.tar.xz
+          7z x -bb0 -ttar cmake-${{ env.LLVM_VERSION }}.src.tar
+          del cmake-${{ env.LLVM_VERSION }}.src.tar.xz
+          del cmake-${{ env.LLVM_VERSION }}.src.tar
+          mv cmake-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_CMAKE_DIR }}
+
+      # in-source build, dir: llvm-project/llvm/build
+      - name: 🛠️ [LLVM] Make build folder
+        working-directory: ${{ env.LLVM_SOURCE_DIR }}
+        run: |
+          mkdir build
+
+      #- name: ❔ CHECK important folders, to see if everything is present (before building)
+      #  run: |
+      #    dir /S /B ${{ env.LLVM_PROJECT_DIR }}
+
+      - name: 🖋️ [LLVM] Configure
+        working-directory: ${{ env.LLVM_BUILD_DIR }}
+        run: |
+          cmake                                                   ^
+            -B ${{ env.LLVM_BUILD_DIR }}                          ^
+            -S ${{ env.LLVM_SOURCE_DIR }}                         ^
+            -G Ninja                                              ^
+            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache                ^
+            -D CMAKE_SYSTEM_NAME=Windows                          ^
+            -D CMAKE_SYSTEM_PROCESSOR=x86_64                      ^
+            -D CMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}" ^
+            -D CMAKE_BUILD_TYPE="Release"                         ^
+            -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded           ^
+            -D BUILD_SHARED_LIBS=OFF                              ^
+            -D LLVM_HOST_TRIPLE="x86_64-windows-msvc"             ^
+            -D LLVM_DEFAULT_TARGET_TRIPLE="x86_64-windows-msvc"   ^
+            -D LLVM_TARGETS_TO_BUILD="X86"                        ^
+            -D LLVM_ENABLE_BACKTRACES=OFF                         ^
+            -D LLVM_ENABLE_UNWIND_TABLES=OFF                      ^
+            -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                    ^
+            -D LLVM_ENABLE_TERMINFO=OFF                           ^
+            -D LLVM_ENABLE_LIBXML2=OFF                            ^
+            -D LLVM_ENABLE_LIBEDIT=OFF                            ^
+            -D LLVM_ENABLE_LIBPFM=OFF                             ^
+            -D LLVM_ENABLE_ZLIB=OFF                               ^
+            -D LLVM_ENABLE_Z3_SOLVER=OFF                          ^
+            -D LLVM_ENABLE_WARNINGS=OFF                           ^
+            -D LLVM_ENABLE_PEDANTIC=OFF                           ^
+            -D LLVM_ENABLE_WERROR=OFF                             ^
+            -D LLVM_ENABLE_ASSERTIONS=OFF                         ^
+            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                        ^
+            -D LLVM_BUILD_UTILS=OFF                               ^
+            -D LLVM_BUILD_TESTS=OFF                               ^
+            -D LLVM_BUILD_DOCS=OFF                                ^
+            -D LLVM_BUILD_EXAMPLES=OFF                            ^
+            -D LLVM_BUILD_BENCHMARKS=OFF                          ^
+            -D LLVM_INCLUDE_UTILS=OFF                             ^
+            -D LLVM_INCLUDE_TESTS=OFF                             ^
+            -D LLVM_INCLUDE_DOCS=OFF                              ^
+            -D LLVM_INCLUDE_EXAMPLES=OFF                          ^
+            -D LLVM_INCLUDE_BENCHMARKS=OFF                        ^
+            -D LLVM_ENABLE_BINDINGS=OFF                           ^
+            -D LLVM_OPTIMIZED_TABLEGEN=ON                         ^
+            -D LLVM_ENABLE_PLUGINS=OFF                            ^
+            -D LLVM_ENABLE_IDE=OFF
+
+      - name: 🙏 [LLVM] Build
+        run: |
+          ninja -C ${{ env.LLVM_BUILD_DIR }}
+          ninja -C ${{ env.LLVM_BUILD_DIR }} install
+
+      - name: 🛠️ [LLVM] Add to PATH
+        shell: pwsh
+        run: |
+          $env:PATH += ";${{ env.LLVM_INSTALL_DIR }};${{ env.LLVM_INSTALL_DIR }}\bin"
+          echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      # https://community.chocolatey.org/packages/pkgconfiglite
+      # https://community.chocolatey.org/packages/winflexbison
+      # https://community.chocolatey.org/packages/winflexbison3 ???
+      # https://community.chocolatey.org/packages/meson
+      - name: 🔽 Install Meson
+        run: |
+          choco install meson winflexbison pkgconfiglite
+          refreshenv
+
+      - name: 🛠️ [MESON] Add to PATH
+        shell: pwsh
+        run: |
+          $env:PATH += ";C:\Program Files\Meson\"
+          echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: 🛠️ [MESON] Verify Installation
+        run: meson --version
+
+      - name: 🔽 [DIRECTX-HEADERS] Build + Install (d3d12.h)
+        env:
+          CC:  "sccache cl"
+          CXX: "sccache cl"
+        run: |
+          git clone https://github.com/microsoft/DirectX-Headers -b v1.614.0 --depth 1
+          cd DirectX-Headers
+          meson setup build --backend=ninja --buildtype=release -Dbuild-test=false --prefix="${{ env.DXSDK_DIR }}"
+          meson install -C build
+          cd ..
+          rm -rf DirectX-Headers
+
+      - name: 🛠️ [DIRECTX-HEADERS] Add to PATH
+        shell: pwsh
+        run: |
+          $env:PATH += ";${{ env.DXSDK_DIR }}"
+          echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: 🔽 [PYTHON] Install Packages
+        run: |
+          pip install packaging mako
+
+      #
+      # Mesa Build Options
+      #
+      # https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/meson_options.txt
+      #
+      #
+      # -Dvulkan-drivers="swrast,amd,microsoft-experimental"
+      # -Dgallium-drivers="swrast,d3d12,zink"
+      #
+      - name: 🖋️ [MESA] Setup (swrast llvmpipe)
+        env:
+          CC:  "sccache cl"
+          CXX: "sccache cl"
+          CPPFLAGS: "-I${{ env.DXSDK_DIR }}/include"
+        run: |
+          meson setup                                            ^
+          ${{ env.MESA_BUILD_DIR }}                              ^
+          ${{ env.MESA_SOURCE_DIR }}                             ^
+           --prefix="${{ env.MESA_INSTALL_DIR }}\mesa-llvmpipe"  ^
+           --default-library=static                              ^
+          -D buildtype=release                                   ^
+          -D platforms=windows                                   ^
+          -D b_vscrt=mt                                          ^
+          -D b_ndebug=true                                       ^
+          -D llvm=enabled                                        ^
+          -D shared-llvm=disabled                                ^
+          -D osmesa=true                                         ^
+          -D gallium-drivers=swrast                              ^
+          -D vulkan-drivers=swrast                               ^
+          -D build-tests=true
+
+      - name: 🙏 [MESA] Build + Install
+        run: |
+          ninja -C ${{ env.MESA_BUILD_DIR }}
+          ninja -C ${{ env.MESA_BUILD_DIR }} install
+
+      # Versioning Pattern: "mesa-lvp-24.1.3-win64.zip"
+      - name: 🏷️ Versionize Artifact
+        shell: pwsh
+        run: |
+          $version = $env:MESA_VERSION_TAG -replace "^mesa-", ""
+          echo "MESA_LVP_ARTIFACT_NAME=mesa-lvp-$version-win64" >> $env:GITHUB_ENV
+          echo "MESA_LVP_ARTIFACT_ZIPFILE=mesa-lvp-$version-win64.zip" >> $env:GITHUB_ENV
+
+      - name: 📦 Package
+        run: |
+          7z a -tzip -mx9 "${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR }}\*"
+
+      - name: 📦 🚀 Upload Artifact
+        uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
+        with:
+          name: ${{ env.MESA_LVP_ARTIFACT_NAME }}
+          path: ${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}

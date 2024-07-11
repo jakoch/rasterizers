@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 #
 # .github/workflows/build-swiftshader.yml
 #
@@ -41,7 +42,9 @@ jobs:
 # ---------------------------------------------------------------------------------------
 
     name: "Windows VC17"
+
     # https://github.com/actions/runner-images
+    # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md
     runs-on: windows-2022
 
     env:
@@ -77,10 +80,10 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1 # https://github.com/hendrikmuhs/ccache-action
         with:
           variant: sccache
-          key: cache-build-${{ github.ref }}
+          key: swift-build-${{ github.ref }}
           restore-keys: |
-            cache-build-${{ github.ref }}
-            cache-build-
+            swift-build-${{ github.ref }}
+            swift-build-
 
       - name: 🖋️ CMake ➔ Configure
         run: |
@@ -125,6 +128,7 @@ jobs:
         run: |
           echo "SHORTHASH=$($env:GITHUB_SHA.substring(0,7))" >> $env:GITHUB_ENV
 
+      # TODO should this be "win-x86_64"?
       # Versioning Pattern: "swiftshader-5.0.0.0-a2s8ad3-win64.zip"
       - name: 🏷️ Versionize Artifact
         shell: pwsh
