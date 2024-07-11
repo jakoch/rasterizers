@@ -1,0 +1,64 @@
+#
+# .github/workflows/build-mesa.yml
+#
+# Copyright 2024 Jens A. Koch.
+# SPDX-License-Identifier: MIT
+# This file is part of https://github.com/jakoch/rasterizers
+#
+
+name: "Build on Windows: Mesa"
+
+on:
+  # You can manually run this workflow.
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "*.*.*"
+  pull_request:
+    branches:
+      - main
+  # This workflow runs on schedule: every Sunday at 1 am.
+  #schedule:
+  #  - cron: "0 1 * * 0"
+
+# needed by "softprops/action-gh-release"
+permissions:
+  contents: write
+
+# improve CI concurrency by automatically cancelling outdated jobs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+# ---------------------------------------------------------------------------------------
+
+  build-on-windows-mesa:
+
+# ---------------------------------------------------------------------------------------
+
+    name: "Windows VC17"
+    # https://github.com/actions/runner-images
+    runs-on: windows-2022
+
+    env:
+      MESA_VERSION_TAG: '24.1.3'
+      BUILD_DIR:   ${{github.workspace}}\mesa\build
+      INSTALL_DIR: ${{github.workspace}}\mesa\install
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: 🤘 Checkout Code
+        uses: actions/checkout@v4 # https://github.com/actions/checkout
+        repository: https://gitlab.freedesktop.org/mesa/mesa.git
+        ref: {{ $env.MESA_VERSION_TAG }}
+        path: 'mesa'
+
+      - name: 🛠️ Setup Visual Studio Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
