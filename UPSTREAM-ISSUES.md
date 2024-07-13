@@ -41,7 +41,7 @@ Call Stack (most recent call first):
 
 - Missing dependecy check for directx/d3d12, compilation possible.
   - Expected: compilation not possible, with indication that dependency directx/d3d12 is missing.
-  - Solved by: choco install directx-sdk
+  - Solved by: building and installing https://github.com/microsoft/DirectX-Headers
 
 
 ```
