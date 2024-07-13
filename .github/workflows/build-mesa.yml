@@ -7,7 +7,7 @@
 # This file is part of https://github.com/jakoch/rasterizers
 #
 
-name: "Build on Windows: Mesa"
+name: "Build on Windows: Mesa llvmpipe"
 
 on:
   # You can manually run this workflow.
