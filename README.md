@@ -61,6 +61,7 @@ Referencing [Mesa Documentation on Precompiled Libraries](https://docs.mesa3d.or
 
 - Website: https://mesa3d.org
 - Documentation: https://docs.mesa3d.org/
+- Issue Tracker: https://issuetracker.google.com/issues?q=componentid:408190&pli=1
 - Main Repository: https://gitlab.freedesktop.org/mesa/mesa/
 - Demos: https://gitlab.freedesktop.org/mesa/demos
 
