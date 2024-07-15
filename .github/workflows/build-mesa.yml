@@ -48,17 +48,18 @@ jobs:
     runs-on: windows-2022
 
     env:
-      MESA_VERSION_TAG: 'mesa-24.1.3'
-      MESA_SOURCE_DIR:  ${{github.workspace}}\mesa
-      MESA_BUILD_DIR:   ${{github.workspace}}\mesa\build
-      MESA_INSTALL_DIR: ${{github.workspace}}\mesa\install
-      LLVM_VERSION:     '18.1.8'
-      LLVM_PROJECT_DIR: ${{github.workspace}}\llvm-project
-      LLVM_CMAKE_DIR:   ${{github.workspace}}\llvm-project\cmake
-      LLVM_SOURCE_DIR:  ${{github.workspace}}\llvm-project\llvm
-      LLVM_BUILD_DIR:   ${{github.workspace}}\llvm-project\llvm\build
-      LLVM_INSTALL_DIR: ${{github.workspace}}\llvm-project\llvm\install
-      DXSDK_DIR:        ${{github.workspace}}\directx
+      MESA_VERSION_TAG:   'mesa-24.1.3'
+      MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
+      MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
+      MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
+      LLVM_VERSION:       '18.1.8'
+      LLVM_PROJECT_DIR:   ${{github.workspace}}\llvm-project
+      LLVM_CMAKE_DIR:     ${{github.workspace}}\llvm-project\cmake
+      LLVM_SOURCE_DIR:    ${{github.workspace}}\llvm-project\llvm
+      LLVM_BUILD_DIR:     ${{github.workspace}}\llvm-project\llvm\build
+      LLVM_INSTALL_DIR:   ${{github.workspace}}\llvm-project\llvm\install
+      DIRECTX_HEADER_TAG: 'v1.614.0'
+      DIRECTX_SDK_DIR:    ${{github.workspace}}\directx
 
     defaults:
       run:
@@ -223,9 +224,9 @@ jobs:
           CC:  "sccache cl"
           CXX: "sccache cl"
         run: |
-          git clone https://github.com/microsoft/DirectX-Headers -b v1.614.0 --depth 1
+          git clone https://github.com/microsoft/DirectX-Headers -b ${{ env.DIRECTX_HEADER_TAG }} --depth 1
           cd DirectX-Headers
-          meson setup build --backend=ninja --buildtype=release -Dbuild-test=false --prefix="${{ env.DXSDK_DIR }}"
+          meson setup build --backend=ninja --buildtype=release -Dbuild-test=false --prefix="${{ env.DIRECTX_SDK_DIR }}"
           meson install -C build
           cd ..
           rm -rf DirectX-Headers
@@ -233,7 +234,7 @@ jobs:
       - name: 🛠️ [DIRECTX-HEADERS] Add to PATH
         shell: pwsh
         run: |
-          $env:PATH += ";${{ env.DXSDK_DIR }}"
+          $env:PATH += ";${{ env.DIRECTX_SDK_DIR }}"
           echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: 🔽 [PYTHON] Install Packages
@@ -253,7 +254,7 @@ jobs:
         env:
           CC:  "sccache cl"
           CXX: "sccache cl"
-          CPPFLAGS: "-I${{ env.DXSDK_DIR }}/include"
+          CPPFLAGS: "-I${{ env.DIRECTX_SDK_DIR }}/include"
         run: |
           meson setup                                            ^
           ${{ env.MESA_BUILD_DIR }}                              ^

@@ -3,9 +3,9 @@
 ## Swiftshader
 
 - cmake build + cmake install do not build vk_swiftshader.dll
-  - building in the main folder builds all third-party tools, but not the library itself.
-  - To build the main library one has to specify "--target "vk_swiftshader". Good job.
- - Expected: configure + make + install, drops the main library into the install folder.
+  - Building in the main folder builds third-party tools, but not the library itself.
+  - To build the main library one has to specify `--target "vk_swiftshader"`.
+  - Expected: configure + make + install, drops the main library into the install folder.
 
 
   ```
@@ -14,7 +14,7 @@
         run: cmake --install . --config Release
 ```
 
-- broken install steps for main library and third-party libs..
+- broken `cmake --install` steps for main library and third-party libs..
 
 ```
 cmake --install D:\a\rasterizers\rasterizers/swiftshader/build --prefix D:\a\rasterizers\rasterizers/swiftshader/install --verbose
