@@ -270,7 +270,7 @@ jobs:
           -D osmesa=true                                         ^
           -D gallium-drivers=swrast                              ^
           -D vulkan-drivers=swrast                               ^
-          -D build-tests=true
+          -D build-tests=false
 
       - name: 🙏 [MESA] Build + Install
         run: |
