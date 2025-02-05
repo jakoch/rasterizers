@@ -109,10 +109,10 @@ jobs:
             for (let page = 0; page < pages; page += 1) {
               const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner,
-                page: page,
-                per_page: 100,
                 repo: context.repo.repo,
                 workflow_id: 'cleanup-workflows.yml',
+                page: page,
+                per_page: 100
               });
               if (response.data.workflow_runs.length > 0) {
                 for (const run of response.data.workflow_runs) {
@@ -143,6 +143,7 @@ jobs:
               const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
+                workflow_id: 'dependabot-updates',
                 page: page,
                 per_page: 100,
               });
