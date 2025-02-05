@@ -125,17 +125,12 @@ jobs:
           Write-Output "FileVersionRaw: $fileVersionRaw"
           echo "SWIFTSHADER_VERSION=$fileVersionRaw" >> $env:GITHUB_ENV
 
-      - name: 📝 Get Git commit shorthash
-        shell: pwsh
-        run: |
-          echo "SHORTHASH=$($env:GITHUB_SHA.substring(0,7))" >> $env:GITHUB_ENV
-
       # Versioning Pattern: "swiftshader-win64-5.0.0.0-a2s8ad3.zip"
       - name: 🏷️ Versionize Artifact
         shell: pwsh
         run: |
-          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-win64$-${{ env.SWIFTSHADER_VERSION }}-${{ env.SHORTHASH }}" >> $env:GITHUB_ENV
-          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-win64$-${{ env.SWIFTSHADER_VERSION }}-${{ env.SHORTHASH }}" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-win64-${{ env.SWIFTSHADER_VERSION }}" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-win64-${{ env.SWIFTSHADER_VERSION }}" >> $env:GITHUB_ENV
 
       - name: 📦 Package Artifact
         run: |
