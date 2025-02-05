@@ -311,10 +311,11 @@ jobs:
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
         run: |
-          gh release create ${{ env.RELEASE_VERSION_TAG }} \
-            --title "${{ env.MESA_LVP_ARTIFACT_NAME }}" \
-            --notes "Mesa Lavapipe for Windows (x64, VC17) ${{ env.MESA_LVP_VERSION }}" \
+          gh release create "${{ env.RELEASE_VERSION_TAG }}" `
+            --title "${{ env.MESA_LVP_ARTIFACT_NAME }}" `
+            --notes "Mesa Lavapipe for Windows (x64, VC17) ${{ env.MESA_LVP_VERSION }}" `
             --latest
 
       # Step 2: Upload the artifact to the release tag.
@@ -322,5 +323,6 @@ jobs:
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
         run: |
-          gh release upload ${{ env.RELEASE_VERSION_TAG }} ${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}
+          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}"
