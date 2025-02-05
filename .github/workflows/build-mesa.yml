@@ -301,9 +301,10 @@ jobs:
           retention-days: 3
 
       # This is a date based version for repeatable releases (date.run.run_attempt).
-      - name: Set Rolling Release Version
+      - name: Set Rolling Release Version for Tag
+        shell: pwsh
         run: |
-          echo "RELEASE_VERSION_TAG=$(date +'%Y%m%d').${{ github.run_number }}.${{ github.run_attempt }}" >> $GITHUB_ENV
+          echo "RELEASE_VERSION_TAG=$(Get-Date -Format 'yyyyMMdd').${{ github.run_number }}.${{ github.run_attempt }}" >> $env:GITHUB_ENV
 
       - name: 📦 🚀 Create Release
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
