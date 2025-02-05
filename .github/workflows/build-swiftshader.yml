@@ -17,7 +17,7 @@ on:
     branches:
       - main
     tags:
-      - "*.*.*"
+      - "v*.*.*"
   pull_request:
     branches:
       - main
@@ -147,7 +147,7 @@ jobs:
           name: ${{ env.SWIFTSHADER_ARTIFACT_NAME }}
           path: ${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
           compression-level: 0
-          retention-days: 3  
+          retention-days: 3
 
       # This is a date based version for repeatable releases (date.run.run_attempt).
       - name: Set Rolling Release Version for Tag
@@ -162,7 +162,7 @@ jobs:
           gh release create ${{ env.TAG_RELEASE_VERSION_TAG }} \
             --title "${{ env.SWIFTSHADER_ARTIFACT_NAME }}" \
             --notes "Swiftshader for Windows (x64, VC17) ${{ env.SWIFTSHADER_VERSION }}" \
-            --latest        
+            --latest
 
       # Step 2: Upload the artifact to the release tag.
       - name: 📦 🔼 Upload Release  Artifact

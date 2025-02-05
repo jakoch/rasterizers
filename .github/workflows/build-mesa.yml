@@ -17,7 +17,7 @@ on:
     branches:
       - main
     tags:
-      - "*.*.*"
+      - "v*.*.*"
   pull_request:
     branches:
       - main
@@ -313,7 +313,7 @@ jobs:
           gh release create ${{ env.RELEASE_VERSION_TAG }} \
             --title "${{ env.MESA_LVP_ARTIFACT_NAME }}" \
             --notes "Mesa Lavapipe for Windows (x64, VC17) ${{ env.MESA_LVP_VERSION }}" \
-            --latest        
+            --latest
 
       # Step 2: Upload the artifact to the release tag.
       - name: 📦 🔼 Upload Release Artifact
