@@ -139,10 +139,25 @@ jobs:
           script: |
             const pages = 5;
             let runs_to_delete = [];
+            // Get all workflows
+            const { data: workflowsData } = await github.rest.actions.listRepoWorkflows({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            // Find workflow with name "Dependabot Updates"
+            const dependabotWorkflow = workflowsData.workflows.find(w => w.name === "Dependabot Updates");
+            if (!dependabotWorkflow) {
+              console.log("❌ Dependabot Updates workflow not found.");
+              return;
+            }
+            const workflowId = dependabotWorkflow.id;
+            console.log(`✅ Found Dependabot workflow ID: ${workflowId}`);
+            // Fetch workflow runs
             for (let page = 0; page < pages; page += 1) {
               const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
+                workflow_id: workflowId, // Use dynamically fetched ID
                 page: page,
                 per_page: 100,
               });
@@ -154,6 +169,7 @@ jobs:
                 }
               }
             }
+            // Delete workflow runs
             for (const run of runs_to_delete) {
               console.log(`[Deleting] Run id ${run[0]} of '${run[1]}'.`);
               try {
@@ -163,6 +179,6 @@ jobs:
                   run_id: run[0]
                 });
               } catch (error) {
-                // ignore errors
+                console.log(`⚠️ Failed to delete run ${run[0]}: ${error.message}`);
               }
             }
