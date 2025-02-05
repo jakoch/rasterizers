@@ -277,13 +277,13 @@ jobs:
           ninja -C ${{ env.MESA_BUILD_DIR }}
           ninja -C ${{ env.MESA_BUILD_DIR }} install
 
-      # Versioning Pattern: "mesa-lvp-24.3.4 -win64.zip"
+      # Versioning Pattern: "mesa-lavapipe-win64-24.3.4.zip"
       - name: 🏷️ Versionize Artifact
         shell: pwsh
         run: |
           $version = $env:MESA_VERSION_TAG -replace "^mesa-", ""
-          echo "MESA_LVP_ARTIFACT_NAME=mesa-lvp-$version-win64" >> $env:GITHUB_ENV
-          echo "MESA_LVP_ARTIFACT_ZIPFILE=mesa-lvp-$version-win64.zip" >> $env:GITHUB_ENV
+          echo "MESA_LVP_ARTIFACT_NAME=mesa-lavapipe-win64-$version" >> $env:GITHUB_ENV
+          echo "MESA_LVP_ARTIFACT_ZIPFILE=mesa-lavapipe-win64-$version.zip" >> $env:GITHUB_ENV
 
       - name: 📦 Package
         run: |
