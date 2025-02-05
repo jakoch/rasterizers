@@ -46,8 +46,8 @@ jobs:
     name: "Windows VC17"
 
     # https://github.com/actions/runner-images
-    # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md
-    runs-on: windows-2022
+    # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
+    runs-on: windows-2025
 
     env:
       MESA_VERSION_TAG:   'mesa-24.3.4'
