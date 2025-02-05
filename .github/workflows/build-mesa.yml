@@ -24,7 +24,8 @@ on:
   #schedule:
   #  - cron: "0 1 * * 0"
 
-# needed by "softprops/action-gh-release"
+# "contents: write" allows the action to create a release
+# this is required by the release step, which uses "gh release create"
 permissions:
   contents: write
 
@@ -282,10 +283,11 @@ jobs:
         shell: pwsh
         run: |
           $version = $env:MESA_VERSION_TAG -replace "^mesa-", ""
+          echo "MESA_LVP_VERSION=$version" >> $env:GITHUB_ENV
           echo "MESA_LVP_ARTIFACT_NAME=mesa-lavapipe-win64-$version" >> $env:GITHUB_ENV
           echo "MESA_LVP_ARTIFACT_ZIPFILE=mesa-lavapipe-win64-$version.zip" >> $env:GITHUB_ENV
 
-      - name: 📦 Package
+      - name: 📦 Package Artifact
         run: |
           7z a -tzip -mx9 "${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR }}\*"
 
@@ -294,3 +296,21 @@ jobs:
         with:
           name: ${{ env.MESA_LVP_ARTIFACT_NAME }}
           path: ${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}
+
+      - name: 📦 🚀 Create Release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ env.MESA_LVP_VERSION }} \
+            --title "${{ env.MESA_LVP_ARTIFACT_NAME }}" \
+            --notes "Mesa Lavapipe for Windows (x64, VC17) ${{ env.MESA_LVP_VERSION }}" \
+            --latest        
+
+      # Step 2: Upload the artifact to the release tag.
+      - name: 📦 🔼 Upload Release Artifact
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ env.MESA_LVP_VERSION }} ${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}
