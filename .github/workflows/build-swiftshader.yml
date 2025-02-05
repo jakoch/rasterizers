@@ -24,7 +24,8 @@ on:
   #schedule:
   #  - cron: "0 1 * * 0"
 
-# needed by "softprops/action-gh-release"
+# "contents: write" allows the action to create a release
+# this is required by the release step, which uses "gh release create"
 permissions:
   contents: write
 
@@ -121,22 +122,21 @@ jobs:
           $versionInfo = (Get-Item $libraryPath).VersionInfo
           $fileVersionRaw = $versionInfo.FileVersionRaw
           Write-Output "FileVersionRaw: $fileVersionRaw"
-          echo "VERSION=$fileVersionRaw" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_VERSION=$fileVersionRaw" >> $env:GITHUB_ENV
 
       - name: 📝 Get Git commit shorthash
         shell: pwsh
         run: |
           echo "SHORTHASH=$($env:GITHUB_SHA.substring(0,7))" >> $env:GITHUB_ENV
 
-      # TODO should this be "win-x86_64"?
-      # Versioning Pattern: "swiftshader-5.0.0.0-a2s8ad3-win64.zip"
+      # Versioning Pattern: "swiftshader-win64-5.0.0.0-a2s8ad3.zip"
       - name: 🏷️ Versionize Artifact
         shell: pwsh
         run: |
-          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-${{ env.VERSION }}-${{ env.SHORTHASH }}-win64" >> $env:GITHUB_ENV
-          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-${{ env.VERSION }}-${{ env.SHORTHASH }}-win64.zip" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-win64$-{{ env.SWIFTSHADER_VERSION }}-${{ env.SHORTHASH }}" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-win64$-{{ env.SWIFTSHADER_VERSION }}-${{ env.SHORTHASH }}" >> $env:GITHUB_ENV
 
-      - name: 📦 Package
+      - name: 📦 Package Artifact
         run: |
           7z a -tzip -mx9 "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}" "${{ env.BUILD_DIR }}\Windows\*"
 
@@ -145,9 +145,23 @@ jobs:
         with:
           name: ${{ env.SWIFTSHADER_ARTIFACT_NAME }}
           path: ${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
+          compression-level: 0
+          retention-days: 3  
 
-      - name: 📦 🚀 Release
-        uses: softprops/action-gh-release@v2 # https://github.com/softprops/action-gh-release
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: ${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
+      - name: 📦 🚀 Create Release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ env.SWIFTSHADER_VERSION }} \
+            --title "${{ env.SWIFTSHADER_ARTIFACT_NAME }}" \
+            --notes "Swiftshader for Windows (x64, VC17) ${{ env.SWIFTSHADER_VERSION }}" \
+            --latest        
+
+      # Step 2: Upload the artifact to the release tag.
+      - name: 📦 🔼 Upload Release  Artifact
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ env.SWIFTSHADER_VERSION }} ${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
