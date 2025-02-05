@@ -134,8 +134,8 @@ jobs:
       - name: 🏷️ Versionize Artifact
         shell: pwsh
         run: |
-          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-win64$-{{ env.SWIFTSHADER_VERSION }}-${{ env.SHORTHASH }}" >> $env:GITHUB_ENV
-          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-win64$-{{ env.SWIFTSHADER_VERSION }}-${{ env.SHORTHASH }}" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-win64$-${{ env.SWIFTSHADER_VERSION }}-${{ env.SHORTHASH }}" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-win64$-${{ env.SWIFTSHADER_VERSION }}-${{ env.SHORTHASH }}" >> $env:GITHUB_ENV
 
       - name: 📦 Package Artifact
         run: |
@@ -150,16 +150,16 @@ jobs:
           retention-days: 3  
 
       # This is a date based version for repeatable releases (date.run.run_attempt).
-      - name: Set Rolling Release Version
+      - name: Set Rolling Release Version for Tag
         run: |
-          echo "RELEASE_VERSION=$(date +'%Y%m%d').${{ github.run_number }}.${{ github.run_attempt }}" >> $GITHUB_ENV
+          echo "RELEASE_VERSION_TAG=$(date +'%Y%m%d').${{ github.run_number }}.${{ github.run_attempt }}" >> $GITHUB_ENV
 
       - name: 📦 🚀 Create Release
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ env.RELEASE_VERSION }} \
+          gh release create ${{ env.TAG_RELEASE_VERSION_TAG }} \
             --title "${{ env.SWIFTSHADER_ARTIFACT_NAME }}" \
             --notes "Swiftshader for Windows (x64, VC17) ${{ env.SWIFTSHADER_VERSION }}" \
             --latest        
@@ -170,4 +170,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ env.RELEASE_VERSION }} ${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
+          gh release upload ${{ env.TAG_RELEASE_VERSION_TAG }} ${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
