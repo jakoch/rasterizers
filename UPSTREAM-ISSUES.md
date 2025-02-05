@@ -8,13 +8,16 @@
   - Expected: configure + make + install, drops the main library into the install folder.
 
 
-  ```
+```
         - name: 📦 CMake ➔ Install Release
         working-directory: ${{env.BUILD_DIR}}
         run: cmake --install . --config Release
 ```
 
+
 - broken `cmake --install` steps for main library and third-party libs..
+
+
 
 ```
 cmake --install D:\a\rasterizers\rasterizers/swiftshader/build --prefix D:\a\rasterizers\rasterizers/swiftshader/install --verbose
@@ -33,6 +36,7 @@ Call Stack (most recent call first):
   swiftshader/build/third_party/SPIRV-Tools/cmake_install.cmake:42 (include)
   swiftshader/build/cmake_install.cmake:40 (include)
 ```
+
 
 ## Mesa
 
