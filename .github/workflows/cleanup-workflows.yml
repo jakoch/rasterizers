@@ -143,7 +143,6 @@ jobs:
               const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                actor: 'dependabot[bot]',
                 page: page,
                 per_page: 100,
               });
