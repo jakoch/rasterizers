@@ -303,14 +303,14 @@ jobs:
       # This is a date based version for repeatable releases (date.run.run_attempt).
       - name: Set Rolling Release Version
         run: |
-          echo "RELEASE_VERSION=$(date +'%Y%m%d').${{ github.run_number }}.${{ github.run_attempt }}" >> $GITHUB_ENV
+          echo "RELEASE_VERSION_TAG=$(date +'%Y%m%d').${{ github.run_number }}.${{ github.run_attempt }}" >> $GITHUB_ENV
 
       - name: 📦 🚀 Create Release
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ env.RELEASE_VERSION }} \
+          gh release create ${{ env.RELEASE_VERSION_TAG }} \
             --title "${{ env.MESA_LVP_ARTIFACT_NAME }}" \
             --notes "Mesa Lavapipe for Windows (x64, VC17) ${{ env.MESA_LVP_VERSION }}" \
             --latest        
@@ -321,4 +321,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ env.RELEASE_VERSION }} ${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}
+          gh release upload ${{ env.RELEASE_VERSION_TAG }} ${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}
