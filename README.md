@@ -3,22 +3,26 @@
 #### What is this?
 
 This repository automates the process of building and releasing ready-to-use
-drivers for Windows of two software rasterizers: Mesa's LLVMmpipe and
-Google's Swiftshader.
+drivers for Windows of two software rasterizers: Mesa's **LLVMpipe** and
+Google's **Swiftshader**.
 
 Both rasterizers are designed to enable rendering in CPU environments,
 which is particularly valuable in CI (Continuous Integration) systems for
 automated testing and validation of graphics applications.
 
-The purpose of this repository is to build these drivers for integration with
+Neither Mesa's LLVMpipe nor Google's SwiftShader offer official downloads for
+these packages as of February 2025.
+
+This repository aims to provide prebuilt versions of these drivers for integration with
 [jakoch/install-vulkan-sdk-action](https://github.com/jakoch/install-vulkan-sdk-action),
 which automates the installation of the Vulkan SDK during GitHub Action CI runs.
-By integrating the software rasterizers from this repository,
-developers can effectively test their Vulkan software on GitHub Action CI.
+The drivers are compiled using GitHub Actions CI, ensuring automated compilation,
+and distributed through GitHub Releases, providing a standardized download
+mechanism for developers.
 
-The drivers are compiled using GitHub Actions CI, ensuring automated
-compilation, and distributed through GitHub Releases, providing a standardized
-download mechanism for developers.
+By using the software rasterizers from this repository, developers can
+effectively test their Vulkan applications on CPU-only or GPU-less platforms,
+such as CI environments.
 
 #### What is a Software Rasterizer?
 
@@ -29,31 +33,36 @@ processing, primitive assembly, rasterization (converting geometric shapes
 into pixels), and pixel shading entirely through software algorithms and
 CPU computations.
 
-### What is Mesa LLVMmpipe?
+### What is Mesa LLVMpipe?
 
-[Mesa's LLVMmpipe](https://docs.mesa3d.org/drivers/llvmpipe.html) is a component of the Mesa 3D Graphics Library. It uses the
-LLVM compiler infrastructure to perform rendering tasks on the CPU, offering
-a flexible and robust solution for environments lacking dedicated GPU hardware.
+[Mesa's LLVMpipe](https://docs.mesa3d.org/drivers/llvmpipe.html)  is a component
+of the Mesa 3D Graphics Library that leverages the LLVM compiler infrastructure
+to perform rendering tasks on the CPU. It provides a flexible and robust
+solution for environments without dedicated GPU hardware. Specifically, all
+graphics-related processing, including shaders, rasterization of points, lines,
+and triangles, and vertex processing, is converted into LLVM intermediate
+representation (IR) and then translated into CPU machine code for the target
+platform, such as x86, x86_64, or ppc64le.
 
 #### What is Swiftshader?
 
-[Swiftshader](https://github.com/google/swiftshader), developed by Google, delivers a high-performance CPU-based
-implementation of the Vulkan and OpenGL ES APIs, ensuring graphics rendering
-on systems without GPU acceleration.
+[Swiftshader](https://github.com/google/swiftshader), developed by Google,
+delivers a high-performance CPU-based implementation of the Vulkan and
+OpenGL ES APIs, ensuring graphics rendering on systems without GPU acceleration.
 
 #### Why does this repo exist?
 
 1. Neither project offers precompiled binaries.
-2. Various precompiled libraries from anonymous users are available on GitHub,
+   - According to Mesa's documentation:
+      - > In general, precompiled Mesa libraries are not available.
+      - Referencing [Mesa Documentation on Precompiled Libraries](https://docs.mesa3d.org/precompiled.html).
+   - According to Google's SwiftShader repo:
+      - > No releases published
+      - Referencing [Google's Swiftshader Github Repository](https://github.com/google/swiftshader)
+1. Various precompiled libraries from anonymous users are available on GitHub,
    but they lack regular updates and, more importantly, CI builds.
-3. I needed a reliable download source for integration into my
+2. I needed a reliable download source for integration into my
    [jakoch/install-vulkan-sdk-action](https://github.com/jakoch/install-vulkan-sdk-action).
-
-According to Mesa's documentation:
-
-> In general, precompiled Mesa libraries are not available.
-
-Referencing [Mesa Documentation on Precompiled Libraries](https://docs.mesa3d.org/precompiled.html).
 
 #### Links
 
@@ -61,6 +70,7 @@ Referencing [Mesa Documentation on Precompiled Libraries](https://docs.mesa3d.or
 
 - Website: https://mesa3d.org
 - Documentation: https://docs.mesa3d.org/
+- LLVMpipe: https://docs.mesa3d.org/drivers/llvmpipe.html
 - Issue Tracker: https://issuetracker.google.com/issues?q=componentid:408190&pli=1
 - Main Repository: https://gitlab.freedesktop.org/mesa/mesa/
 - Demos: https://gitlab.freedesktop.org/mesa/demos
@@ -69,3 +79,9 @@ Referencing [Mesa Documentation on Precompiled Libraries](https://docs.mesa3d.or
 
 - Main Repository: https://swiftshader.googlesource.com/SwiftShader
 - Github Mirror: https://github.com/google/swiftshader
+
+##### Arch Linux
+
+- https://wiki.archlinux.org/title/Vulkan
+- https://archlinux.org/packages/?name=vulkan-swrast
+- https://archlinux.org/packages/?name=lib32-vulkan-swrast
