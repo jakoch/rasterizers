@@ -133,7 +133,7 @@ jobs:
         shell: pwsh
         run: |
           echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-win64-${{ env.SWIFTSHADER_VERSION }}" >> $env:GITHUB_ENV
-          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-win64-${{ env.SWIFTSHADER_VERSION }}" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-win64-${{ env.SWIFTSHADER_VERSION }}.zip" >> $env:GITHUB_ENV
 
       - name: 📦 Package Artifact
         run: |
