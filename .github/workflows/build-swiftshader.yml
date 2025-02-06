@@ -154,30 +154,32 @@ jobs:
           echo "RELEASE_VERSION_TAG=$(Get-Date -Format 'yyyyMMdd')" >> $env:GITHUB_ENV
 
       # Step 1: Create a new release tag, or update(append) release notes if it exists.
+      # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
       - name: 📦 🚀 Create or Update Release
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
           $tag = "${{ env.RELEASE_VERSION_TAG }}"
           $new_notes = "• Swiftshader for Windows (x64, VC17) ${{ env.SWIFTSHADER_VERSION }}`n"
-          if (gh release view $tag *> $null) {
+          $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
+          if ($?) {
             echo "✅ Release $tag already exists. Appending new notes."
-            $existing_notes = gh release view $tag --json body --jq ".body"
+            if ($null -eq $existing_notes) { $existing_notes = "" }
             $updated_notes = "$existing_notes`n$new_notes"
             gh release edit $tag --notes "$updated_notes"
           } else {
             echo "🚀 Creating new release: $tag"
-            gh release create $tag `
-              --title "$tag" `
-              --notes "$new_notes" `
+            gh release create $tag @(
+              --title "$tag"
+              --notes "$new_notes"
               --latest
+            )
           }
 
       # Step 2: Upload the artifact to the release tag.
+      # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
       - name: 📦 🔼 Upload Release Artifact
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
