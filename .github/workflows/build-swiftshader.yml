@@ -60,6 +60,9 @@ jobs:
     steps:
       - name: 🤘 Checkout Code
         uses: actions/checkout@v4 # https://github.com/actions/checkout
+
+      - name: 🤘 Checkout Code
+        uses: actions/checkout@v4 # https://github.com/actions/checkout
         with:
           repository: google/swiftshader
           path: swiftshader
