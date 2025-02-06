@@ -183,5 +183,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}"
+          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}" --clobber
 

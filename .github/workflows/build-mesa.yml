@@ -336,4 +336,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}"
+          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}" --clobber
