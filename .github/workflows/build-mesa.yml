@@ -300,11 +300,11 @@ jobs:
           compression-level: 0
           retention-days: 3
 
-      # This is a date based version for repeatable releases (date.run.run_attempt).
+      # This is a date based version for repeatable releases.
       - name: 🏷️ Set Rolling Release Version for Tag
         shell: pwsh
         run: |
-          echo "RELEASE_VERSION_TAG=$(Get-Date -Format 'yyyyMMdd').${{ github.run_number }}.${{ github.run_attempt }}" >> $env:GITHUB_ENV
+          echo "RELEASE_VERSION_TAG=$(Get-Date -Format 'yyyyMMdd')" >> $env:GITHUB_ENV
 
       # Step 1: Create a new release tag, or update(append) release notes if it exists.
       - name: 📦 🚀 Create or Update Release
