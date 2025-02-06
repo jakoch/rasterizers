@@ -170,11 +170,10 @@ jobs:
             gh release edit $tag --notes "$updated_notes"
           } else {
             echo "🚀 Creating new release: $tag"
-            gh release create $tag @(
-              --title "$tag"
-              --notes "$new_notes"
+            gh release create $tag `
+              --title "$tag" `
+              --notes "$new_notes" `
               --latest
-            )
           }
 
       # Step 2: Upload the artifact to the release tag.
