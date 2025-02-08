@@ -33,7 +33,7 @@ processing, primitive assembly, rasterization (converting geometric shapes
 into pixels), and pixel shading entirely through software algorithms and
 CPU computations.
 
-### What is Mesa LLVMpipe?
+#### What is Mesa LLVMpipe?
 
 [Mesa's LLVMpipe](https://docs.mesa3d.org/drivers/llvmpipe.html)  is a component
 of the Mesa 3D Graphics Library that leverages the LLVM compiler infrastructure

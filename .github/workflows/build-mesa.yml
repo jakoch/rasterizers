@@ -92,7 +92,7 @@ jobs:
 
       - name: 🤘 Checkout Code - https://gitlab.freedesktop.org/mesa/mesa
         run: |
-          git clone --depth 1 --branch ${{ env.MESA_VERSION_TAG }} https://gitlab.freedesktop.org/mesa/mesa.git mesa
+          git clone --depth=1 --no-tags --single-branch --branch ${{ env.MESA_VERSION_TAG }} https://gitlab.freedesktop.org/mesa/mesa.git mesa
 
       - name: 🛠️ Setup Visual Studio Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1 # https://github.com/ilammy/msvc-dev-cmd
@@ -226,7 +226,7 @@ jobs:
           CC:  "sccache cl"
           CXX: "sccache cl"
         run: |
-          git clone https://github.com/microsoft/DirectX-Headers -b ${{ env.DIRECTX_HEADER_TAG }} --depth 1
+          git clone --depth=1 --no-tags --single-branch --branch ${{ env.DIRECTX_HEADER_TAG }} https://github.com/microsoft/DirectX-Headers }}
           cd DirectX-Headers
           meson setup build --backend=ninja --buildtype=release -Dbuild-test=false --prefix="${{ env.DIRECTX_SDK_DIR }}"
           meson install -C build
