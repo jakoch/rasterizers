@@ -1,0 +1,69 @@
+name: Build Version Cache
+
+on:
+  # This workflow is triggered when all of the following workflows are completed:
+  workflow_run:
+    workflows: ["Build Lavapipe", "Build SwiftShader"]
+    types: [completed]
+
+jobs:
+  update-version-cache:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get releases
+        run: |
+          gh api repos/${{ github.repository }}/releases --paginate | jq '[
+          .[] | {
+              tag: .tag_name,
+              assets: [.assets[] | {
+                name: .name,
+                version: ( .name | capture("(?<version>[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.[0-9]+)?)").version),
+                url: .browser_download_url
+              }]
+            }
+          ]' > releases.json
+          cat releases.json
+
+      - name: Generate versions_list.json
+        run: |
+          jq 'reduce .[] as $release ({};
+            reduce $release.assets[] as $asset (.;
+              ($asset.name | capture("^(?<base>.+)-(?<version>[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.[0-9]+)?)")) as $captured |
+              .[$captured.base] += [{
+                "version": $captured.version,
+                "tag": $release.tag,
+                "url": $asset.url
+              }]
+            )
+          )' releases.json > version_list.json
+          cat version_list.json
+
+      - name: Add "latest" and "by_version" fields
+        run: |
+          jq '{
+            latest: with_entries({
+              key: .key,
+              value: (.value | max_by(.version | split(".") | map(tonumber)))
+            }),
+            by_version: with_entries({
+              key: .key,
+              value: ( reduce .value[] as $item ({}; . + {
+                  ($item.version): {
+                    tag: $item.tag, download_url: $item.url
+                  }
+                })
+              )
+            })
+          }' version_list.json > versions.json
+          cat versions.json
+
+      - name: Upload `versions.json`
+        run: |
+          LATEST_TAG=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name)
+          gh release upload $LATEST_TAG versions.json --repo ${{ github.repository }} --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
