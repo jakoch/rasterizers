@@ -8,9 +8,14 @@ on:
     workflows: ["Build Lavapipe", "Build SwiftShader"]
     types: [completed]
 
+
+
 jobs:
   update-version-cache:
     runs-on: ubuntu-latest
+
+    env:
+      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout Repository
