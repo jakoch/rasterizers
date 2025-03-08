@@ -1,6 +1,8 @@
 name: Build Version Cache
 
 on:
+  # You can manually run this workflow.
+  workflow_dispatch:
   # This workflow is triggered when all of the following workflows are completed:
   workflow_run:
     workflows: ["Build Lavapipe", "Build SwiftShader"]
