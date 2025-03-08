@@ -1,5 +1,34 @@
 ## jakoch/rasterizers [![Build on Windows: Mesa llvmpipe](https://github.com/jakoch/rasterizers/actions/workflows/build-mesa.yml/badge.svg?branch=main)](https://github.com/jakoch/rasterizers/actions/workflows/build-mesa.yml) [![Build on Windows: Swiftshader](https://github.com/jakoch/rasterizers/actions/workflows/build-swiftshader.yml/badge.svg?branch=main)](https://github.com/jakoch/rasterizers/actions/workflows/build-swiftshader.yml)
 
+# tl;tr
+
+### How to get the latest version of llvmpipe or swiftshader from this repository?
+
+This requires two requests: first, fetch versions.json to get the latest version's URL, then use that URL to download the file.
+
+1. Fetch `versions.json` from the latest GitHub release:
+   https://github.com/jakoch/rasterizers/releases/latest/download/versions.json
+2. Extract the latest download URL from `version.json`:
+   - For SwiftShader: `.latest["swiftshader-win64"].url`
+   - For LLVMpipe: `.latest["mesa-lavapipe-win64"].url`
+3. Download the file using the extracted URL.
+
+#### Download latest version of Swiftshader
+
+```sh
+swiftshader_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/releases/latest/download/versions.json | jq -r ".latest[\"swiftshader-win64\"].url")
+curl -sLO "$latest_version"
+```
+
+#### Download latest version of LLVMPipe
+
+```sh
+llvmpipe_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/releases/latest/download/versions.json | jq -r ".latest[\"mesa-lavapipe-win64\"].url")
+curl -sLO "$latest_version"
+```
+
+-----
+
 #### What is this?
 
 This repository automates the process of building and releasing ready-to-use
