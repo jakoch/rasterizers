@@ -60,7 +60,7 @@ jobs:
               key: .key,
               value: ( reduce .value[] as $item ({}; . + {
                   ($item.version): {
-                    tag: $item.tag, download_url: $item.url
+                    tag: $item.tag, url: $item.url
                   }
                 })
               )
