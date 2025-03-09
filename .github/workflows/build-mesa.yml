@@ -280,7 +280,8 @@ jobs:
         env:
           CC:  "sccache cl"
           CXX: "sccache cl"
-          CPPFLAGS: "-I${{ env.DIRECTX_SDK_DIR }}\include"
+          CPPFLAGS: "-I${{ env.DIRECTX_SDK_DIR }}/include -I${{ env.GLSLANG_DIR }}/include"
+          LDFLAGS:  "-L${{ env.DIRECTX_SDK_DIR }}/lib -L${{ env.GLSLANG_DIR }}/lib"
         run: |
           meson setup                                            ^
           ${{ env.MESA_BUILD_DIR }}                              ^
