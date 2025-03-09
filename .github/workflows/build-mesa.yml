@@ -8,7 +8,7 @@
 # This file is part of https://github.com/jakoch/rasterizers
 #
 
-name: "Build on Windows: Mesa llvmpipe"
+name: "Build on Windows: Mesa Lavapipe"
 
 on:
   # You can manually run this workflow.

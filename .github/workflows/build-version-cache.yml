@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   # This workflow is triggered when all of the following workflows are completed:
   workflow_run:
-    workflows: ["Build Lavapipe", "Build SwiftShader"]
+    workflows: ["Build on Windows: Mesa Lavapipe", "Build on Windows: Swiftshader"]
     types: [completed]
 
 
