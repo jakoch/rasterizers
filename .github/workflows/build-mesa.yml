@@ -238,8 +238,10 @@ jobs:
       - name: 🛠️ [DIRECTX-HEADERS] Add to PATH
         shell: pwsh
         run: |
-          $env:PATH += ";${{ env.DIRECTX_SDK_DIR }}"
+          $env:PATH += ";${{ env.DIRECTX_SDK_DIR }};${{ env.DIRECTX_SDK_DIR }}\include;${{ env.DIRECTX_SDK_DIR }}\include\directx"
           echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          dir ${{ env.DIRECTX_SDK_DIR }}\include
+          dir ${{ env.DIRECTX_SDK_DIR }}\include\directx
 
       - name: 🔽 [PYTHON] Install Packages
         run: |
@@ -278,7 +280,7 @@ jobs:
         env:
           CC:  "sccache cl"
           CXX: "sccache cl"
-          CPPFLAGS: "-I${{ env.DIRECTX_SDK_DIR }}/include"
+          CPPFLAGS: "-I${{ env.DIRECTX_SDK_DIR }}\include"
         run: |
           meson setup                                            ^
           ${{ env.MESA_BUILD_DIR }}                              ^
