@@ -243,16 +243,25 @@ jobs:
         run: |
           pip install packaging mako PyYAML
 
+      - name: 🔽 Install glslang
+        run: |
+          git clone https://github.com/KhronosGroup/glslang.git
+          cd glslang
+          cmake -S . -B build
+          cmake --build build --config Release
+          sudo cmake --install build
+
       #
       # Mesa Build Options
       #
-      # https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/meson_options.txt
+      # https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/meson.options
       #
       #
       # -Dvulkan-drivers="swrast,amd,microsoft-experimental"
-      # -Dgallium-drivers="swrast,d3d12,zink"
+      # -Dgallium-drivers="swrast,d3d12,zink" deprecated with v25
+      # -D gallium-drivers=softpipe,llvmpipe
       #
-      - name: 🖋️ [MESA] Setup (swrast llvmpipe)
+      - name: 🖋️ [MESA] Setup (softpipe llvmpipe)
         env:
           CC:  "sccache cl"
           CXX: "sccache cl"
@@ -270,7 +279,7 @@ jobs:
           -D llvm=enabled                                        ^
           -D shared-llvm=disabled                                ^
           -D osmesa=true                                         ^
-          -D gallium-drivers=swrast                              ^
+          -D gallium-drivers=swrast,softpipe,llvmpipe            ^
           -D vulkan-drivers=swrast                               ^
           -D build-tests=false
 

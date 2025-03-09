@@ -4,7 +4,9 @@
 
 ### How to get the latest version of llvmpipe or swiftshader from this repository?
 
-This requires two requests: first, fetch versions.json to get the latest version's URL, then use that URL to download the file.
+This requires two requests:
+ - first, fetch versions.json to get the latest version's URL,
+ - then use that URL to download the file.
 
 1. Fetch `versions.json` from the latest GitHub release:
    https://github.com/jakoch/rasterizers/releases/latest/download/versions.json
@@ -17,14 +19,14 @@ This requires two requests: first, fetch versions.json to get the latest version
 
 ```sh
 swiftshader_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/releases/latest/download/versions.json | jq -r ".latest[\"swiftshader-win64\"].url")
-curl -sLO "$latest_version"
+curl -sLO "$swiftshader_latest_version"
 ```
 
 #### Download latest version of LLVMPipe
 
 ```sh
 llvmpipe_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/releases/latest/download/versions.json | jq -r ".latest[\"mesa-lavapipe-win64\"].url")
-curl -sLO "$latest_version"
+curl -sLO "$llvmpipe_latest_version"
 ```
 
 -----
