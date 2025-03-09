@@ -50,7 +50,7 @@ jobs:
     runs-on: windows-2025
 
     env:
-      MESA_VERSION_TAG:   'mesa-24.3.4'
+      MESA_VERSION_TAG:   'mesa-25.0.0'
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
@@ -60,7 +60,7 @@ jobs:
       LLVM_SOURCE_DIR:    ${{github.workspace}}\llvm-project\llvm
       LLVM_BUILD_DIR:     ${{github.workspace}}\llvm-project\llvm\build
       LLVM_INSTALL_DIR:   ${{github.workspace}}\llvm-project\llvm\install
-      DIRECTX_HEADER_TAG: 'v1.614.0'
+      DIRECTX_HEADER_TAG: 'v1.615.0'
       DIRECTX_SDK_DIR:    ${{github.workspace}}\directx
 
     defaults:
