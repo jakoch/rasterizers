@@ -228,7 +228,7 @@ jobs:
           CC:  "sccache cl"
           CXX: "sccache cl"
         run: |
-          git clone --depth=1 --no-tags --single-branch --branch ${{ env.DIRECTX_HEADER_TAG }} https://github.com/microsoft/DirectX-Headers }}
+          git clone --depth=1 --no-tags --single-branch --branch ${{ env.DIRECTX_HEADER_TAG }} https://github.com/microsoft/DirectX-Headers
           cd DirectX-Headers
           meson setup build --backend=ninja --buildtype=release -Dbuild-test=false --prefix="${{ env.DIRECTX_SDK_DIR }}"
           meson install -C build
@@ -250,7 +250,7 @@ jobs:
       # update_glslang_sources fetches the dependencies: goggletest, SPIRV-Tools, SPIRV-Headers
       - name: 🔽 [GLSLANG] Build + Install glslang
         run: |
-          git clone --depth=1 --no-tags --single-branch --branch ${{ env.GLSLANG_TAG }} https://github.com/KhronosGroup/glslang.git
+          git clone --depth=1 --no-tags --single-branch --branch ${{ env.GLSLANG_TAG }} https://github.com/KhronosGroup/glslang
           cd glslang
           python update_glslang_sources.py
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX="${{ env.GLSLANG_DIR }}"
