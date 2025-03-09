@@ -235,11 +235,11 @@ jobs:
           meson install -C build
           cd ..
           rm -rf DirectX-Headers
-          Test-Path "${{ env.DIRECTX_SDK_DIR }}\include\directx\d3d12.h"
 
       - name: 🛠️ [DIRECTX-HEADERS] Add to PATH
         shell: pwsh
         run: |
+          Test-Path "${{ env.DIRECTX_SDK_DIR }}\include\directx\d3d12.h"
           $env:PATH += ";${{ env.DIRECTX_SDK_DIR }};${{ env.DIRECTX_SDK_DIR }}\include"
           echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
