@@ -63,6 +63,7 @@ jobs:
       DIRECTX_HEADER_TAG: 'v1.615.0'
       DIRECTX_SDK_DIR:    ${{github.workspace}}\directx
       GLSLANG_DIR:        ${{github.workspace}}\glslang
+      GLSLANG_TAG:        '15.1.0'
 
     defaults:
       run:
@@ -244,12 +245,13 @@ jobs:
         run: |
           pip install packaging mako PyYAML
 
+      # update_glslang_sources fetches the dependencies: goggletest, SPIRV-Tools, SPIRV-Headers
       - name: 🔽 [GLSLANG] Build + Install glslang
         run: |
-          git clone https://github.com/KhronosGroup/glslang.git
+          git clone --depth=1 --no-tags --single-branch --branch ${{ env.GLSLANG_TAG }} https://github.com/KhronosGroup/glslang.git
           cd glslang
           python update_glslang_sources.py
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX="${{ env.DIRECTX_SDK_DIR }}"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX="${{ env.GLSLANG_DIR }}"
           cmake --build build --config Release --target install
           cmake --install build
 
