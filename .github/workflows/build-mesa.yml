@@ -255,11 +255,14 @@ jobs:
           cmake --build build --config Release --target install
           cmake --install build
 
+      # the f**k is this? glslangValidator is not in the PATH, not even built.
+      # ln -s /usr/bin/glslang /usr/bin/glslangValidator
       - name: 🛠️ [GLSLANG] Add to PATH
         shell: pwsh
         run: |
-          $env:PATH += ";${{ env.GLSLANG_DIR }}"
+          $env:PATH += ";${{ env.GLSLANG_DIR }};${{ env.GLSLANG_DIR }}\bin"
           echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          copy "${{ env.GLSLANG_DIR }}\bin\glslang.exe" "${{ env.GLSLANG_DIR }}\bin\glslangValidator.exe"
 
       #
       # Mesa Build Options
