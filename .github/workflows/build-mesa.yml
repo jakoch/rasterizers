@@ -286,7 +286,7 @@ jobs:
           meson setup                                            ^
           ${{ env.MESA_BUILD_DIR }}                              ^
           ${{ env.MESA_SOURCE_DIR }}                             ^
-           --prefix="${{ env.MESA_INSTALL_DIR }}\mesa-llvmpipe"  ^
+           --prefix="${{ env.MESA_INSTALL_DIR }}"                ^
            --default-library=static                              ^
           -D buildtype=release                                   ^
           -D platforms=windows                                   ^
