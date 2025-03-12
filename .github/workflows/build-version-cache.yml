@@ -54,16 +54,18 @@ jobs:
           jq '{
             latest: with_entries({
               key: .key,
-              value: (.value | max_by(.version | split(".") | map(tonumber)))
+              value: (.value | max_by([(.version | split(".") | map(tonumber)), (.tag | tonumber)]))
             }),
             by_version: with_entries({
               key: .key,
-              value: ( reduce .value[] as $item ({}; . + {
-                  ($item.version): {
-                    tag: $item.tag, url: $item.url
-                  }
-                })
-              )
+              value: (reduce .value[] as $item ({}; . + {
+                  ($item.version): (
+                    .[$item.version] // [] | . + [{
+                      tag: $item.tag,
+                      url: $item.url
+                    }]
+                  )
+                }))
             })
           }' version_list.json > versions.json
           cat versions.json
