@@ -89,7 +89,8 @@ jobs:
           restore-keys: |
             swift-build-${{ github.ref }}
             swift-build-
-
+      
+      # -DCMAKE_POLICY_VERSION_MINIMUM=3.5 was added for third_party/marl/CMakeLists.txt min version issue
       - name: 🖋️ CMake ➔ Configure
         run: |
           cmake -S swiftshader -B ${{ env.BUILD_DIR }}  ^
@@ -101,7 +102,8 @@ jobs:
             -DSWIFTSHADER_BUILD_GLESv2=OFF              ^
             -DSWIFTSHADER_BUILD_GLES_CM=OFF             ^
             -DSWIFTSHADER_BUILD_PVR=OFF                 ^
-            -DSWIFTSHADER_BUILD_TESTS=OFF
+            -DSWIFTSHADER_BUILD_TESTS=OFF               ^
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
       - name: 🙏 CMake ➔ Build
         run: |
