@@ -294,8 +294,7 @@ jobs:
           -D b_ndebug=true                                       ^
           -D llvm=enabled                                        ^
           -D shared-llvm=disabled                                ^
-          -D osmesa=true                                         ^
-          -D gallium-drivers=swrast,softpipe,llvmpipe            ^
+          -D gallium-drivers=softpipe,llvmpipe            ^
           -D vulkan-drivers=swrast                               ^
           -D build-tests=false
 
