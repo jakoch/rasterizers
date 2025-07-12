@@ -50,7 +50,7 @@ jobs:
     runs-on: windows-2025
 
     env:
-      MESA_VERSION_TAG:   'mesa-25.0.0'
+      MESA_VERSION_TAG:   'mesa-25.1.5'
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
