@@ -49,20 +49,24 @@ jobs:
     # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
     runs-on: windows-2025
 
+    # LLVM:       https://github.com/llvm/llvm-project/releases
+    # MESA:       https://docs.mesa3d.org/relnotes.html
+    # DX-Headers: https://github.com/microsoft/DirectX-Headers/releases
+    # GLSLang:    https://github.com/KhronosGroup/glslang/releases
     env:
-      MESA_VERSION_TAG:   'mesa-25.1.5'
+      MESA_VERSION_TAG:   'mesa-25.2.5'
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
-      LLVM_VERSION:       '18.1.8'
+      LLVM_VERSION:       '21.1.4'
       LLVM_PROJECT_DIR:   ${{github.workspace}}\llvm-project
       LLVM_CMAKE_DIR:     ${{github.workspace}}\llvm-project\cmake
       LLVM_SOURCE_DIR:    ${{github.workspace}}\llvm-project\llvm
       LLVM_BUILD_DIR:     ${{github.workspace}}\llvm-project\llvm\build
       LLVM_INSTALL_DIR:   ${{github.workspace}}\llvm-project\llvm\install
-      DIRECTX_TAG:        'v1.615.0'
+      DIRECTX_TAG:        'v1.618.2'
       DIRECTX_SDK_DIR:    ${{github.workspace}}\directx
-      GLSLANG_TAG:        '15.1.0'
+      GLSLANG_TAG:        '16.0.0'
       GLSLANG_DIR:        ${{github.workspace}}\glslang
 
 
