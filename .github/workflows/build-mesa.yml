@@ -58,12 +58,13 @@ jobs:
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
-      LLVM_VERSION:       '21.1.3'
+      LLVM_VERSION:       '21.1.4'
       LLVM_PROJECT_DIR:   ${{github.workspace}}\llvm-project
       LLVM_CMAKE_DIR:     ${{github.workspace}}\llvm-project\cmake
       LLVM_SOURCE_DIR:    ${{github.workspace}}\llvm-project\llvm
       LLVM_BUILD_DIR:     ${{github.workspace}}\llvm-project\llvm\build
       LLVM_INSTALL_DIR:   ${{github.workspace}}\llvm-project\llvm\install
+      LLVM_DEPS_DIR:      ${{github.workspace}}\llvm-project\third-party
       DIRECTX_TAG:        'v1.618.2'
       DIRECTX_SDK_DIR:    ${{github.workspace}}\directx
       GLSLANG_TAG:        '16.0.0'
@@ -143,6 +144,16 @@ jobs:
           del cmake-${{ env.LLVM_VERSION }}.src.tar
           mv cmake-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_CMAKE_DIR }}
 
+      - name: 🔽 [LLVM] Install Third-Party into llvm-project folder
+        working-directory: ${{ env.LLVM_PROJECT_DIR }}
+        run: |
+          curl -sfL -o third-party-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/third-party-${{ env.LLVM_VERSION }}.src.tar.xz
+          7z x -bb0 -txz third-party-${{ env.LLVM_VERSION }}.src.tar.xz
+          7z x -bb0 -ttar third-party-${{ env.LLVM_VERSION }}.src.tar
+          del third-party-${{ env.LLVM_VERSION }}.src.tar.xz
+          del third-party-${{ env.LLVM_VERSION }}.src.tar
+          mv third-party-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_DEPS_DIR }}
+
       # in-source build, dir: llvm-project/llvm/build
       - name: 🛠️ [LLVM] Make build folder
         working-directory: ${{ env.LLVM_SOURCE_DIR }}
@@ -153,6 +164,7 @@ jobs:
       #  run: |
       #    dir /S /B ${{ env.LLVM_PROJECT_DIR }}
 
+      # -DLLVM_TARGETS_TO_BUILD="AArch64;ARM;X86" ^
       - name: 🖋️ [LLVM] Configure
         working-directory: ${{ env.LLVM_BUILD_DIR }}
         run: |
@@ -173,7 +185,6 @@ jobs:
             -D LLVM_ENABLE_BACKTRACES=OFF                         ^
             -D LLVM_ENABLE_UNWIND_TABLES=OFF                      ^
             -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                    ^
-            -D LLVM_ENABLE_TERMINFO=OFF                           ^
             -D LLVM_ENABLE_LIBXML2=OFF                            ^
             -D LLVM_ENABLE_LIBEDIT=OFF                            ^
             -D LLVM_ENABLE_LIBPFM=OFF                             ^
@@ -182,7 +193,7 @@ jobs:
             -D LLVM_ENABLE_WARNINGS=OFF                           ^
             -D LLVM_ENABLE_PEDANTIC=OFF                           ^
             -D LLVM_ENABLE_WERROR=OFF                             ^
-            -D LLVM_ENABLE_ASSERTIONS=OFF                         ^
+            -D LLVM_ENABLE_SPHINX=OFF                             ^
             -D LLVM_BUILD_LLVM_C_DYLIB=OFF                        ^
             -D LLVM_BUILD_UTILS=OFF                               ^
             -D LLVM_BUILD_TESTS=OFF                               ^
@@ -197,7 +208,9 @@ jobs:
             -D LLVM_ENABLE_BINDINGS=OFF                           ^
             -D LLVM_OPTIMIZED_TABLEGEN=ON                         ^
             -D LLVM_ENABLE_PLUGINS=OFF                            ^
-            -D LLVM_ENABLE_IDE=OFF
+            -D LLVM_ENABLE_IDE=OFF                                ^
+            -D LLVM_ENABLE_ASSERTIONS=OFF                         ^
+            -D LLVM_ENABLE_DOXYGEN=OFF
 
       - name: 🙏 [LLVM] Build
         run: |
