@@ -49,6 +49,9 @@ jobs:
     # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
     runs-on: windows-2025
 
+    # Do not run the workflow if the actor is dependabot or if the PR is from a fork.
+    if: ${{ ! (startsWith(github.actor, 'dependabot') || github.event.pull_request.head.repo.fork ) }}
+
     env:
       BUILD_DIR:   ${{github.workspace}}\swiftshader\build
       INSTALL_DIR: ${{github.workspace}}\swiftshader\install
@@ -58,10 +61,11 @@ jobs:
         shell: cmd
 
     steps:
+      # A checkout of this repo is required to push artifacts to GitHub Releases.
       - name: 🤘 Checkout Code
         uses: actions/checkout@v5 # https://github.com/actions/checkout
 
-      - name: 🤘 Checkout Code
+      - name: 🤘 Checkout Code - https://github.com/google/swiftshader
         uses: actions/checkout@v5 # https://github.com/actions/checkout
         with:
           repository: google/swiftshader
@@ -77,7 +81,7 @@ jobs:
 
       # https://community.chocolatey.org/packages/cmake
       - name: 🔽 Install CMake
-        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+        run: choco upgrade -y --no-progress --limit-output cmake --installargs 'ADD_CMAKE_TO_PATH=System'
 
       # Reminder: This step requires that the CMakePresets for CI contain
       # "CMAKE_CXX_COMPILER_LAUNCHER": "sccache".
@@ -89,8 +93,11 @@ jobs:
           restore-keys: |
             swift-build-${{ github.ref }}
             swift-build-
-      
+
       # -DCMAKE_POLICY_VERSION_MINIMUM=3.5 was added for third_party/marl/CMakeLists.txt min version issue
+      # SWIFTSHADER_LESS_DEBUG_INFO=1 to lower the build times
+      # -DREACTOR_BACKEND=LLVM                      ^
+      # -DREACTOR_VERIFY_LLVM_IR=TRUE                ^
       - name: 🖋️ CMake ➔ Configure
         run: |
           cmake -S swiftshader -B ${{ env.BUILD_DIR }}  ^
@@ -103,6 +110,9 @@ jobs:
             -DSWIFTSHADER_BUILD_GLES_CM=OFF             ^
             -DSWIFTSHADER_BUILD_PVR=OFF                 ^
             -DSWIFTSHADER_BUILD_TESTS=OFF               ^
+            -DSWIFTSHADER_BUILD_BENCHMARKS=OFF          ^
+            -DSWIFTSHADER_WARNINGS_AS_ERRORS=TRUE       ^
+            -DSWIFTSHADER_LESS_DEBUG_INFO=TRUE          ^
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
       - name: 🙏 CMake ➔ Build

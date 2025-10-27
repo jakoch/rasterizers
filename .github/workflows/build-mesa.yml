@@ -47,7 +47,32 @@ jobs:
 
     # https://github.com/actions/runner-images
     # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
-    runs-on: windows-2025
+    runs-on: ${{ matrix.config.os }}
+
+    # Do not run the workflow if the actor is dependabot or if the PR is from a fork.
+    if: ${{ ! (startsWith(github.actor, 'dependabot') || github.event.pull_request.head.repo.fork ) }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        # What a shit show..
+        - {
+            os: "windows-2025",
+            msvc_arch: "amd64",
+            llvm_target: "X86",
+            llvm_triple: "x86_64-pc-windows-msvc",
+            cmake_generator: "x64",
+            artifact_arch: "x64"
+          }
+        - {
+            os: "windows-11-arm",
+            msvc_arch: "amd64_arm64",
+            llvm_target: "AArch64",
+            llvm_triple: "aarch64-pc-windows-msvc",
+            cmake_generator: "ARM64",
+            artifact_arch: "arm64"
+          }
 
     # LLVM:       https://github.com/llvm/llvm-project/releases
     # MESA:       https://docs.mesa3d.org/relnotes.html
@@ -95,6 +120,12 @@ jobs:
     # - msvc VC17
 
     steps:
+      - name: Runner OS
+        run: |
+          echo "We are running on ${{ runner.os }} with arch ${{ runner.arch }}."
+          node -e "console.log(require('os').platform() + '-' + require('os').arch())"
+
+      # A checkout of this repo is required to push artifacts to GitHub Releases.
       - name: 🤘 Checkout Code
         uses: actions/checkout@v5 # https://github.com/actions/checkout
 
@@ -104,10 +135,13 @@ jobs:
 
       - name: 🛠️ Setup Visual Studio Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1 # https://github.com/ilammy/msvc-dev-cmd
+        with:
+          # amd64 (x64, default) or amd64_arm64
+          arch: ${{ matrix.config.msvc_arch }}
 
       # https://community.chocolatey.org/packages/cmake
-      - name: 🔽 Install CMake
-        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+      - name: 🔽 [ENV] Install CMake
+        run: choco upgrade -y --no-progress --limit-output cmake --installargs 'ADD_CMAKE_TO_PATH=System'
 
       # Reminder: This step requires that the CMakePresets for CI contain
       # "CMAKE_CXX_COMPILER_LAUNCHER": "sccache".
@@ -115,10 +149,10 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1 # https://github.com/hendrikmuhs/ccache-action
         with:
           variant: sccache
-          key: mesa-build-${{ github.ref }}
+          key: mesa-build-${{ runner.os }}-${{ github.ref }}
           restore-keys: |
-            mesa-build-${{ github.ref }}
-            mesa-build-
+            mesa-build-${{ runner.os }}-${{ github.ref }}
+            mesa-build-${{ runner.os }}
 
       - name: 🛠️ [LLVM] Make project folder
         run: |
@@ -168,48 +202,48 @@ jobs:
       - name: 🖋️ [LLVM] Configure
         working-directory: ${{ env.LLVM_BUILD_DIR }}
         run: |
-          cmake                                                   ^
-            -B ${{ env.LLVM_BUILD_DIR }}                          ^
-            -S ${{ env.LLVM_SOURCE_DIR }}                         ^
-            -G Ninja                                              ^
-            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache                ^
-            -D CMAKE_SYSTEM_NAME=Windows                          ^
-            -D CMAKE_SYSTEM_PROCESSOR=x86_64                      ^
-            -D CMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}" ^
-            -D CMAKE_BUILD_TYPE="Release"                         ^
-            -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded           ^
-            -D BUILD_SHARED_LIBS=OFF                              ^
-            -D LLVM_HOST_TRIPLE="x86_64-windows-msvc"             ^
-            -D LLVM_DEFAULT_TARGET_TRIPLE="x86_64-windows-msvc"   ^
-            -D LLVM_TARGETS_TO_BUILD="X86"                        ^
-            -D LLVM_ENABLE_BACKTRACES=OFF                         ^
-            -D LLVM_ENABLE_UNWIND_TABLES=OFF                      ^
-            -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                    ^
-            -D LLVM_ENABLE_LIBXML2=OFF                            ^
-            -D LLVM_ENABLE_LIBEDIT=OFF                            ^
-            -D LLVM_ENABLE_LIBPFM=OFF                             ^
-            -D LLVM_ENABLE_ZLIB=OFF                               ^
-            -D LLVM_ENABLE_Z3_SOLVER=OFF                          ^
-            -D LLVM_ENABLE_WARNINGS=OFF                           ^
-            -D LLVM_ENABLE_PEDANTIC=OFF                           ^
-            -D LLVM_ENABLE_WERROR=OFF                             ^
-            -D LLVM_ENABLE_SPHINX=OFF                             ^
-            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                        ^
-            -D LLVM_BUILD_UTILS=OFF                               ^
-            -D LLVM_BUILD_TESTS=OFF                               ^
-            -D LLVM_BUILD_DOCS=OFF                                ^
-            -D LLVM_BUILD_EXAMPLES=OFF                            ^
-            -D LLVM_BUILD_BENCHMARKS=OFF                          ^
-            -D LLVM_INCLUDE_UTILS=OFF                             ^
-            -D LLVM_INCLUDE_TESTS=OFF                             ^
-            -D LLVM_INCLUDE_DOCS=OFF                              ^
-            -D LLVM_INCLUDE_EXAMPLES=OFF                          ^
-            -D LLVM_INCLUDE_BENCHMARKS=OFF                        ^
-            -D LLVM_ENABLE_BINDINGS=OFF                           ^
-            -D LLVM_OPTIMIZED_TABLEGEN=ON                         ^
-            -D LLVM_ENABLE_PLUGINS=OFF                            ^
-            -D LLVM_ENABLE_IDE=OFF                                ^
-            -D LLVM_ENABLE_ASSERTIONS=OFF                         ^
+          cmake                                                            ^
+            -B ${{ env.LLVM_BUILD_DIR }}                                   ^
+            -S ${{ env.LLVM_SOURCE_DIR }}                                  ^
+            -G Ninja                                                       ^
+            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache                         ^
+            -D CMAKE_SYSTEM_NAME=Windows                                   ^
+            -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}                   ^
+            -D CMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}"          ^
+            -D CMAKE_BUILD_TYPE="Release"                                  ^
+            -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded                    ^
+            -D BUILD_SHARED_LIBS=OFF                                       ^
+            -D LLVM_HOST_TRIPLE=${{ matrix.config.llvm_triple }}           ^
+            -D LLVM_DEFAULT_TARGET_TRIPLE=${{ matrix.config.llvm_triple }} ^
+            -D LLVM_TARGETS_TO_BUILD=${{ matrix.config.llvm_target }}      ^
+            -D LLVM_ENABLE_BACKTRACES=OFF                                  ^
+            -D LLVM_ENABLE_UNWIND_TABLES=OFF                               ^
+            -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                             ^
+            -D LLVM_ENABLE_LIBXML2=OFF                                     ^
+            -D LLVM_ENABLE_LIBEDIT=OFF                                     ^
+            -D LLVM_ENABLE_LIBPFM=OFF                                      ^
+            -D LLVM_ENABLE_ZLIB=OFF                                        ^
+            -D LLVM_ENABLE_Z3_SOLVER=OFF                                   ^
+            -D LLVM_ENABLE_WARNINGS=OFF                                    ^
+            -D LLVM_ENABLE_PEDANTIC=OFF                                    ^
+            -D LLVM_ENABLE_WERROR=OFF                                      ^
+            -D LLVM_ENABLE_SPHINX=OFF                                      ^
+            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
+            -D LLVM_BUILD_UTILS=OFF                                        ^
+            -D LLVM_BUILD_TESTS=OFF                                        ^
+            -D LLVM_BUILD_DOCS=OFF                                         ^
+            -D LLVM_BUILD_EXAMPLES=OFF                                     ^
+            -D LLVM_BUILD_BENCHMARKS=OFF                                   ^
+            -D LLVM_INCLUDE_UTILS=OFF                                      ^
+            -D LLVM_INCLUDE_TESTS=OFF                                      ^
+            -D LLVM_INCLUDE_DOCS=OFF                                       ^
+            -D LLVM_INCLUDE_EXAMPLES=OFF                                   ^
+            -D LLVM_INCLUDE_BENCHMARKS=OFF                                 ^
+            -D LLVM_ENABLE_BINDINGS=OFF                                    ^
+            -D LLVM_OPTIMIZED_TABLEGEN=ON                                  ^
+            -D LLVM_ENABLE_PLUGINS=OFF                                     ^
+            -D LLVM_ENABLE_IDE=OFF                                         ^
+            -D LLVM_ENABLE_ASSERTIONS=OFF                                  ^
             -D LLVM_ENABLE_DOXYGEN=OFF
 
       - name: 🙏 [LLVM] Build
@@ -227,9 +261,9 @@ jobs:
       # https://community.chocolatey.org/packages/winflexbison
       # https://community.chocolatey.org/packages/winflexbison3 ???
       # https://community.chocolatey.org/packages/meson
-      - name: 🔽 Install Meson
+      - name: 🔽 [ENV] Install Meson
         run: |
-          choco install meson winflexbison pkgconfiglite
+          choco upgrade -y --no-progress --limit-output meson winflexbison pkgconfiglite
           refreshenv
 
       - name: 🛠️ [MESON] Add to PATH
@@ -264,13 +298,13 @@ jobs:
         run: |
           pip install packaging mako PyYAML
 
-      # update_glslang_sources fetches the dependencies: goggletest, SPIRV-Tools, SPIRV-Headers
+      # update_glslang_sources fetches the dependencies: googletest, SPIRV-Tools, SPIRV-Headers
       - name: 🔽 [GLSLANG] Build + Install glslang
         run: |
           git clone --depth=1 --no-tags --single-branch --branch ${{ env.GLSLANG_TAG }} https://github.com/KhronosGroup/glslang
           cd glslang
           python update_glslang_sources.py
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX="${{ env.GLSLANG_DIR }}"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A ${{ matrix.config.cmake_generator }} -DCMAKE_INSTALL_PREFIX="${{ env.GLSLANG_DIR }}" -DGLSLANG_TESTS=OFF
           cmake --build build --config Release --target install
           cmake --install build
 
@@ -320,14 +354,16 @@ jobs:
           ninja -C ${{ env.MESA_BUILD_DIR }}
           ninja -C ${{ env.MESA_BUILD_DIR }} install
 
-      # Versioning Pattern: "lavapipe-win64-24.3.4.zip"
+      # ${{ matrix.config.artifact_arch }} is either "x64" or "arm64"
+      # Versioning Pattern:
+      # formerly "lavapipe-win64-24.3.4.zip" is now "lavapipe-x64-24.3.4.zip"
       - name: 🏷️ Versionize Artifact
         shell: pwsh
         run: |
           $version = $env:MESA_VERSION_TAG -replace "^mesa-", ""
           echo "MESA_LVP_VERSION=$version" >> $env:GITHUB_ENV
-          echo "MESA_LVP_ARTIFACT_NAME=lavapipe-win64-$version" >> $env:GITHUB_ENV
-          echo "MESA_LVP_ARTIFACT_ZIPFILE=lavapipe-win64-$version.zip" >> $env:GITHUB_ENV
+          echo "MESA_LVP_ARTIFACT_NAME=lavapipe-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
+          echo "MESA_LVP_ARTIFACT_ZIPFILE=lavapipe-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
 
       - name: 📦 Package Artifact
         run: |
@@ -355,7 +391,7 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ env.RELEASE_VERSION_TAG }}"
-          $new_notes = "• Mesa Lavapipe for Windows (x64, VC17) ${{ env.MESA_LVP_VERSION }}"
+          $new_notes = "• Mesa Lavapipe for Windows (${{ matrix.config.artifact_arch }}, VC17) ${{ env.MESA_LVP_VERSION }}"
           $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
           if ($?) {
             Write-Host "✅ Release $tag already exists. Appending new notes."
