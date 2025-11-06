@@ -96,7 +96,7 @@ jobs:
 
       # -DCMAKE_POLICY_VERSION_MINIMUM=3.5 was added for third_party/marl/CMakeLists.txt min version issue
       # SWIFTSHADER_LESS_DEBUG_INFO=1 to lower the build times
-      # -DREACTOR_BACKEND=LLVM                      ^
+      # -DREACTOR_BACKEND=LLVM                       ^
       # -DREACTOR_VERIFY_LLVM_IR=TRUE                ^
       - name: 🖋️ CMake ➔ Configure
         run: |
@@ -152,7 +152,7 @@ jobs:
           7z a -tzip -mx9 "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}" "${{ env.BUILD_DIR }}\Windows\*"
 
       - name: 📦 🚀 Upload Artifact
-        uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
+        uses: actions/upload-artifact@v5 # https://github.com/actions/upload-artifact
         with:
           name: ${{ env.SWIFTSHADER_ARTIFACT_NAME }}
           path: ${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
@@ -167,33 +167,106 @@ jobs:
 
       # Step 1: Create a new release tag, or update(append) release notes if it exists.
       # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-      - name: 📦 🚀 Create or Update Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: pwsh
-        run: |
-          $tag = "${{ env.RELEASE_VERSION_TAG }}"
-          $new_notes = "• Swiftshader for Windows (x64, VC17) ${{ env.SWIFTSHADER_VERSION }}`n"
-          $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
-          if ($?) {
-            echo "✅ Release $tag already exists. Appending new notes."
-            if ($null -eq $existing_notes) { $existing_notes = "" }
-            $updated_notes = "$existing_notes`n$new_notes"
-            gh release edit $tag --notes "$updated_notes"
-          } else {
-            echo "🚀 Creating new release: $tag"
-            gh release create $tag `
-              --title "$tag" `
-              --notes "$new_notes" `
-              --latest
-          }
+      # - name: 📦 🚀 Create or Update Release
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   shell: pwsh
+      #   run: |
+      #     $tag = "${{ env.RELEASE_VERSION_TAG }}"
+      #     $new_notes = "• Swiftshader for Windows (x64, VC17) ${{ env.SWIFTSHADER_VERSION }}`n"
+      #     $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
+      #     if ($?) {
+      #       echo "✅ Release $tag already exists. Appending new notes."
+      #       if ($null -eq $existing_notes) { $existing_notes = "" }
+      #       $updated_notes = "$existing_notes`n$new_notes"
+      #       gh release edit $tag --notes "$updated_notes"
+      #     } else {
+      #       echo "🚀 Creating new release: $tag"
+      #       gh release create $tag `
+      #         --title "$tag" `
+      #         --notes "$new_notes" `
+      #         --latest
+      #     }
 
-      # Step 2: Upload the artifact to the release tag.
-      # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-      - name: 📦 🔼 Upload Release Artifact
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: pwsh
-        run: |
-          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}" --clobber
+      # # Step 2: Upload the artifact to the release tag.
+      # # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      # - name: 📦 🔼 Upload Release Artifact
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   shell: pwsh
+      #   run: |
+      #     gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}" --clobber
 
+# ---------------------------------------------------------------------------------------
+
+  build-on-linux-swiftshader:
+
+# ---------------------------------------------------------------------------------------
+
+    name: "Swiftshader - ubuntu-24.04"
+
+    runs-on: ubuntu-24.04
+
+    # Do not run the workflow if the actor is dependabot or if the PR is from a fork.
+    if: ${{ ! (startsWith(github.actor, 'dependabot') || github.event.pull_request.head.repo.fork ) }}
+
+    env:
+      BUILD_DIR:   ${{github.workspace}}/swiftshader/build
+      INSTALL_DIR: ${{github.workspace}}/swiftshader/install
+
+    steps:
+      # A checkout of this repo is required to push artifacts to GitHub Releases.
+      - name: 🤘 Checkout Code
+        uses: actions/checkout@v5 # https://github.com/actions/checkout
+
+      - name: 🤘 Checkout Code - https://github.com/google/swiftshader
+        uses: actions/checkout@v5 # https://github.com/actions/checkout
+        with:
+          repository: google/swiftshader
+          path: swiftshader
+
+      - name: 🖋️ CMake ➔ Configure
+        run: |
+          cmake -S swiftshader -B ${{ env.BUILD_DIR }} \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSWIFTSHADER_BUILD_VULKAN=ON \
+            -DSWIFTSHADER_BUILD_EGL=OFF \
+            -DSWIFTSHADER_BUILD_GLESv2=OFF \
+            -DSWIFTSHADER_BUILD_GLES_CM=OFF \
+            -DSWIFTSHADER_BUILD_PVR=OFF \
+            -DSWIFTSHADER_BUILD_TESTS=OFF \
+            -DSWIFTSHADER_BUILD_BENCHMARKS=OFF \
+            -DSWIFTSHADER_WARNINGS_AS_ERRORS=TRUE \
+            -DSWIFTSHADER_LESS_DEBUG_INFO=TRUE \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+      - name: 🙏 CMake ➔ Build
+        run: cmake --build ${{ env.BUILD_DIR }} --parallel --target vk_swiftshader
+
+      - name: ❔ CHECK folders
+        run: ls -laR ${{ env.BUILD_DIR }}
+
+      - name: 📝 Get Version of SwiftShader Library (Maj.Min.Patch.Rev)
+        run: |
+          libraryPath="${{ env.BUILD_DIR }}/Linux/libvk_swiftshader.so"
+          # Extract version string (assumes format like x.y.z.w is embedded)
+          version=$(strings "$libraryPath" | grep -oP '\d+\.\d+\.\d+\.\d+' | head -1)
+          echo "Extracted version: $version"
+          echo "SWIFTSHADER_VERSION=$version" >> $GITHUB_ENV
+
+      - name: 🏷️ Versionize Artifact
+        run: |
+          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-linux-x64-${{ env.SWIFTSHADER_VERSION }}" >> $GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-linux-x64-${{ env.SWIFTSHADER_VERSION }}.zip" >> $GITHUB_ENV
+
+      - name: 📦 Package Artifact
+        run: |
+          cd ${{ env.BUILD_DIR }}
+          zip -r "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}" Linux/
+
+      - name: 📦 🚀 Upload Artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ env.SWIFTSHADER_ARTIFACT_NAME }}
+          path: ${{ env.BUILD_DIR }}/${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
