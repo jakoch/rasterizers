@@ -258,17 +258,14 @@ jobs:
       - name: ❔ CHECK folders
         run: ls -laR ${{ env.BUILD_DIR }}
 
-      - name: 📝 Get Version of SwiftShader Library
+      - name: 🧩 Get SwiftShader version
         run: |
-          libraryPath="${{ env.BUILD_DIR }}/Linux/libvk_swiftshader.so"
-          # Extract version string
-          version=$(strings "$libraryPath" | grep -i 'swiftshader' | grep -oP '\d+(\.\d+)+')
-          # Default to "unknown" if not found
-          if [ -z "$version" ]; then
-              version="unknown"
-          fi
-          echo "Extracted version: $version"
-          echo "SWIFTSHADER_VERSION=$version" >> $GITHUB_ENV
+          cd ${{github.workspace}}/swiftshader
+          commit_count=$(git rev-list --count HEAD)
+          commit_hash=$(git rev-parse --short=10 HEAD)
+          SWIFTSHADER_VERSION="r${commit_count}.${commit_hash}"
+          echo "Extracted SwiftShader version: $SWIFTSHADER_VERSION"
+          echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
 
       - name: 🏷️ Versionize Artifact
         run: |
