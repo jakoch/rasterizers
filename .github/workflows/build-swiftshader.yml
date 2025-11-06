@@ -89,10 +89,10 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1 # https://github.com/hendrikmuhs/ccache-action
         with:
           variant: sccache
-          key: swift-build-${{ github.ref }}
+          key: build-swiftshader-${{ runner.os }}-${{ github.ref }}
           restore-keys: |
-            swift-build-${{ github.ref }}
-            swift-build-
+            build-swiftshader-${{ runner.os }}-${{ github.ref }}
+            build-swiftshader-${{ runner.os }}
 
       # -DCMAKE_POLICY_VERSION_MINIMUM=3.5 was added for third_party/marl/CMakeLists.txt min version issue
       # SWIFTSHADER_LESS_DEBUG_INFO=1 to lower the build times
@@ -225,11 +225,22 @@ jobs:
           repository: google/swiftshader
           path: swiftshader
 
+      # Reminder: This step requires that the CMakePresets for CI contain
+      # "CMAKE_CXX_COMPILER_LAUNCHER": "ccache".
+      - name: 🎯 Setup Build Cache
+        uses: hendrikmuhs/ccache-action@v1 # https://github.com/hendrikmuhs/ccache-action
+        with:
+          key: build-swiftshader-${{ runner.os }}-${{ github.ref }}
+          restore-keys: |
+            build-swiftshader-${{ runner.os }}-${{ github.ref }}
+            build-swiftshader-${{ runner.os }}
+
       - name: 🖋️ CMake ➔ Configure
         run: |
           cmake -S swiftshader -B ${{ env.BUILD_DIR }} \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DSWIFTSHADER_BUILD_VULKAN=ON \
             -DSWIFTSHADER_BUILD_EGL=OFF \
             -DSWIFTSHADER_BUILD_GLESv2=OFF \
