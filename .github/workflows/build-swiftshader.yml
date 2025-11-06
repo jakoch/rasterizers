@@ -247,11 +247,15 @@ jobs:
       - name: ❔ CHECK folders
         run: ls -laR ${{ env.BUILD_DIR }}
 
-      - name: 📝 Get Version of SwiftShader Library (Maj.Min.Patch.Rev)
+      - name: 📝 Get Version of SwiftShader Library
         run: |
           libraryPath="${{ env.BUILD_DIR }}/Linux/libvk_swiftshader.so"
-          # Extract version string (assumes format like x.y.z.w is embedded)
-          version=$(strings "$libraryPath" | grep -oP '\d+\.\d+\.\d+\.\d+' | head -1)
+          # Extract version string
+          version=$(strings "$libraryPath" | grep -i 'swiftshader' | grep -oP '\d+(\.\d+)+')
+          # Default to "unknown" if not found
+          if [ -z "$version" ]; then
+              version="unknown"
+          fi
           echo "Extracted version: $version"
           echo "SWIFTSHADER_VERSION=$version" >> $GITHUB_ENV
 
@@ -266,7 +270,9 @@ jobs:
           zip -r "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}" Linux/
 
       - name: 📦 🚀 Upload Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v5 # https://github.com/actions/upload-artifact
         with:
           name: ${{ env.SWIFTSHADER_ARTIFACT_NAME }}
           path: ${{ env.BUILD_DIR }}/${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
+          compression-level: 0
+          retention-days: 3
