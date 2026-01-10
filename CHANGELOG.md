@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - "It was a bright day in April, and the clocks were striking thirteen." - 1984
 
+## [1.1.0] - 2026-01-10
+
+### Changed
+- updated build-mesa.yml to use:
+  - Mesa v25.3.3
+  - LLVM 21.1.8
+  - DX 1.618.2
+  - GLSLANG 16.1.0
+- build and release Lavapipe (Vulkan) and LLVMPipe (OpenGL) artifacts
+
+
 ## [1.0.0] - 2024-07-xx
 
 - init and the usual v1.0.0 things
