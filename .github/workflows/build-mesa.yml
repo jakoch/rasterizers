@@ -132,9 +132,11 @@ jobs:
           # amd64 (x64, default) or amd64_arm64
           arch: ${{ matrix.config.msvc_arch }}
 
+      # Commented out, because a windows-11-arm choco is unable to install a windows-11-arm cmake.
+      # Thanks for nothing. Let's use the pre-installed cmake...
       # https://community.chocolatey.org/packages/cmake
-      - name: 🔽 Install CMake
-        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+      #- name: 🔽 Install CMake
+      #  run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
 
       # Reminder: This step requires that the CMakePresets for CI contain
       # "CMAKE_CXX_COMPILER_LAUNCHER": "sccache".
