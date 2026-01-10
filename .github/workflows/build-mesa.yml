@@ -47,7 +47,7 @@ jobs:
 
     # https://github.com/actions/runner-images
     # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
-    runs-on: windows-2025
+    runs-on: ${{ matrix.config.os }}
 
     # Do not run the workflow if the actor is dependabot or if the PR is from a fork.
     if: ${{ ! (startsWith(github.actor, 'dependabot') || github.event.pull_request.head.repo.fork ) }}
