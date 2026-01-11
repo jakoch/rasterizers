@@ -256,9 +256,11 @@ jobs:
       # https://community.chocolatey.org/packages/winflexbison
       # https://community.chocolatey.org/packages/winflexbison3 ???
       # https://community.chocolatey.org/packages/meson
+      # https://community.chocolatey.org/packages/Lua lua53, lua54 not even on choco
+      # https://community.chocolatey.org/packages/libpng is required for "screenshot" in lavapipe
       - name: 🔽 Install Meson
         run: |
-          choco install meson winflexbison pkgconfiglite
+          choco install meson winflexbison pkgconfiglite lua libpng
           refreshenv
 
       - name: 🛠️ [MESON] Add to PATH
@@ -447,4 +449,3 @@ jobs:
         shell: pwsh
         run: |
           gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}" --clobber
-
