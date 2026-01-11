@@ -211,35 +211,35 @@ jobs:
             -D LLVM_HOST_TRIPLE=${{ matrix.config.llvm_triple }}           ^
             -D LLVM_DEFAULT_TARGET_TRIPLE=${{ matrix.config.llvm_triple }} ^
             -D LLVM_TARGETS_TO_BUILD=${{ matrix.config.llvm_target }}      ^
-            -D LLVM_ENABLE_BACKTRACES=OFF                                  ^
-            -D LLVM_ENABLE_UNWIND_TABLES=OFF                               ^
-            -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                             ^
-            -D LLVM_ENABLE_LIBXML2=OFF                                     ^
-            -D LLVM_ENABLE_LIBEDIT=OFF                                     ^
-            -D LLVM_ENABLE_LIBPFM=OFF                                      ^
-            -D LLVM_ENABLE_ZLIB=OFF                                        ^
-            -D LLVM_ENABLE_Z3_SOLVER=OFF                                   ^
-            -D LLVM_ENABLE_WARNINGS=OFF                                    ^
-            -D LLVM_ENABLE_PEDANTIC=OFF                                    ^
-            -D LLVM_ENABLE_WERROR=OFF                                      ^
-            -D LLVM_ENABLE_SPHINX=OFF                                      ^
-            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
-            -D LLVM_BUILD_UTILS=OFF                                        ^
-            -D LLVM_BUILD_TESTS=OFF                                        ^
+            -D LLVM_BUILD_BENCHMARKS=OFF                                   ^
             -D LLVM_BUILD_DOCS=OFF                                         ^
             -D LLVM_BUILD_EXAMPLES=OFF                                     ^
-            -D LLVM_BUILD_BENCHMARKS=OFF                                   ^
-            -D LLVM_INCLUDE_UTILS=OFF                                      ^
-            -D LLVM_INCLUDE_TESTS=OFF                                      ^
+            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
+            -D LLVM_BUILD_TESTS=OFF                                        ^
+            -D LLVM_BUILD_UTILS=OFF                                        ^
+            -D LLVM_ENABLE_ASSERTIONS=OFF                                  ^
+            -D LLVM_ENABLE_BACKTRACES=OFF                                  ^
+            -D LLVM_ENABLE_BINDINGS=OFF                                    ^
+            -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                             ^
+            -D LLVM_ENABLE_DOXYGEN=OFF                                     ^
+            -D LLVM_ENABLE_IDE=OFF                                         ^
+            -D LLVM_ENABLE_LIBEDIT=OFF                                     ^
+            -D LLVM_ENABLE_LIBPFM=OFF                                      ^
+            -D LLVM_ENABLE_LIBXML2=OFF                                     ^
+            -D LLVM_ENABLE_PEDANTIC=OFF                                    ^
+            -D LLVM_ENABLE_PLUGINS=OFF                                     ^
+            -D LLVM_ENABLE_SPHINX=OFF                                      ^
+            -D LLVM_ENABLE_UNWIND_TABLES=OFF                               ^
+            -D LLVM_ENABLE_WARNINGS=OFF                                    ^
+            -D LLVM_ENABLE_WERROR=OFF                                      ^
+            -D LLVM_ENABLE_Z3_SOLVER=OFF                                   ^
+            -D LLVM_ENABLE_ZLIB=OFF                                        ^
+            -D LLVM_INCLUDE_BENCHMARKS=OFF                                 ^
             -D LLVM_INCLUDE_DOCS=OFF                                       ^
             -D LLVM_INCLUDE_EXAMPLES=OFF                                   ^
-            -D LLVM_INCLUDE_BENCHMARKS=OFF                                 ^
-            -D LLVM_ENABLE_BINDINGS=OFF                                    ^
-            -D LLVM_OPTIMIZED_TABLEGEN=ON                                  ^
-            -D LLVM_ENABLE_PLUGINS=OFF                                     ^
-            -D LLVM_ENABLE_IDE=OFF                                         ^
-            -D LLVM_ENABLE_ASSERTIONS=OFF                                  ^
-            -D LLVM_ENABLE_DOXYGEN=OFF
+            -D LLVM_INCLUDE_TESTS=OFF                                      ^
+            -D LLVM_INCLUDE_UTILS=OFF                                      ^
+            -D LLVM_OPTIMIZED_TABLEGEN=ON
 
       - name: 🙏 [LLVM] Build
         run: |
@@ -319,12 +319,14 @@ jobs:
       #
       # https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/meson.options
       #
+      # Lavapipe is vulkan_drivers=swrast
+      # LLVMPipe is gallium_drivers=llvmpipe
       #
-      # -Dvulkan-drivers="swrast,amd,microsoft-experimental"
-      # -Dgallium-drivers="swrast,d3d12,zink" deprecated with v25
-      # -D gallium-drivers=softpipe,llvmpipe
+      # -D vulkan-drivers="swrast,amd,microsoft-experimental"
+      # -D gallium-drivers="swrast,d3d12,zink" deprecated with v25
+      # -D gallium-drivers="softpipe,llvmpipe"
       #
-      - name: 🖋️ [MESA] Setup (softpipe llvmpipe, lavapipe with layers)
+      - name: 🖋️ [MESA] Setup (llvmpipe, lavapipe)
         env:
           CC:  "sccache cl"
           CXX: "sccache cl"
@@ -342,10 +344,9 @@ jobs:
           -D b_ndebug=true                                                    ^
           -D llvm=enabled                                                     ^
           -D shared-llvm=disabled                                             ^
-          -D gallium-drivers=softpipe,llvmpipe                                ^
+          -D gallium-drivers=llvmpipe                                         ^
           -D vulkan-drivers=swrast                                            ^
-          -D vulkan-layers=device-select,overlay,screenshot,vram-report-limit ^
-          -D video-codecs=all                                                 ^
+          -D video-codecs=                                                    ^
           -D egl=enabled                                                      ^
           -D gles1=enabled                                                    ^
           -D gles2=enabled                                                    ^
