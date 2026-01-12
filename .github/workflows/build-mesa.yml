@@ -378,7 +378,8 @@ jobs:
         run: |
           dir /S /B ${{ env.MESA_INSTALL_DIR }}
 
-      - name: 📦 Move Lavapipe driver to standalone folder for packaging
+      # Adhere to the standard folder stucture for packaging: <install-folder> /bin /lib /share
+      - name: 📦 [MESA] Move Lavapipe driver to standalone folder for packaging
         run: |
           echo "Creating Lavapipe install folder: ${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
           mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
@@ -399,7 +400,56 @@ jobs:
         run: |
           dir /S /B ${{ env.MESA_INSTALL_DIR }}
 
-      # Versioning Pattern: "lavapipe-win64-24.3.4.zip"
+      - name: 🖋️ [MESA] Setup (d3d12, dzn (microsoft-experimental))
+        env:
+          CC:  "sccache cl"
+          CXX: "sccache cl"
+          CPPFLAGS: "-I${{ env.DIRECTX_SDK_DIR }}/include -I${{ env.GLSLANG_DIR }}/include"
+          LDFLAGS:  "-L${{ env.DIRECTX_SDK_DIR }}/lib -L${{ env.GLSLANG_DIR }}/lib"
+        run: |
+          meson setup                                                         ^
+          ${{ env.MESA_BUILD_DIR }}-d3d12                                     ^
+          ${{ env.MESA_SOURCE_DIR }}                                          ^
+           --prefix="${{ env.MESA_INSTALL_DIR }}-d3d12-${{ matrix.config.artifact_arch }}" ^
+           --default-library=static                                           ^
+          -D buildtype=release                                                ^
+          -D platforms=windows                                                ^
+          -D b_vscrt=mt                                                       ^
+          -D b_ndebug=true                                                    ^
+          -D llvm=enabled                                                     ^
+          -D shared-llvm=disabled                                             ^
+          -D gallium-mediafoundation=enabled                                  ^
+          -D gallium-drivers=d3d12                                            ^
+          -D vulkan-drivers=microsoft-experimental                            ^
+          -D video-codecs=all                                                 ^
+          -D mediafoundation-codecs=all                                       ^
+          -D egl=enabled                                                      ^
+          -D gles1=enabled                                                    ^
+          -D gles2=enabled                                                    ^
+          -D build-tests=false
+
+      - name: 🙏 [MESA] Build + Install
+        run: |
+          ninja -C ${{ env.MESA_BUILD_DIR }}-d3d12
+          ninja -C ${{ env.MESA_BUILD_DIR }}-d3d12 install
+
+      # Copy dxil.dll to the install folder, if present
+      # Location is e.g. C:\Program Files (x86)\Windows Kits\10\Redist\D3D\arm64\dxil.dll
+      - name: Copy dxil.dll to install folder, if present
+        run: |
+          if exist "%ProgramFiles(x86)%\Windows Kits\10\Redist\D3D\${{ matrix.config.artifact_arch }}\dxil.dll" (
+            echo "Copying dxil.dll from Windows Kits Redist folder."
+            copy /y "%ProgramFiles(x86)%\Windows Kits\10\Redist\D3D\${{ matrix.config.artifact_arch }}\dxil.dll" mesa-d3d12-${{ matrix.config.artifact_arch }}\bin\
+          ) else if exist "%WindowsSdkVerBinPath%${{ matrix.config.artifact_arch }}\dxil.dll" (
+            echo "Copying dxil.dll from Windows SDK Bin folder."
+            copy /y "%WindowsSdkVerBinPath%${{ matrix.config.artifact_arch }}\dxil.dll" mesa-d3d12-${{ matrix.config.artifact_arch }}\bin\
+          )
+
+      - name: ❔ [MESA] Check install folder, to see if everything is present (after install)
+        run: |
+          dir /S /B ${{ env.MESA_INSTALL_DIR }}-d3d12-${{ matrix.config.artifact_arch }}
+
+      # Versioning Pattern: "lavapipe-x64-24.3.4.zip"
       - name: 🏷️ Versionize Artifacts
         shell: pwsh
         run: |
@@ -452,10 +502,12 @@ jobs:
         run: |
           $tag = "${{ env.RELEASE_VERSION_TAG }}"
           $new_notes = "• Mesa Lavapipe for Windows (${{ matrix.config.artifact_arch }}, VC17) ${{ env.MESA_LAVAPIPE_VERSION }}"
+          $new_notes += "`n• Mesa LLVMPipe for Windows (${{ matrix.config.artifact_arch }}, VC17) ${{ env.MESA_LAVAPIPE_VERSION }}"
           $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
           if ($?) {
             Write-Host "✅ Release $tag already exists. Appending new notes."
             if ($null -eq $existing_notes) { $existing_notes = "" }
+            $existing_notes = $existing_notes.TrimEnd()
             $updated_notes = "$existing_notes`n`n$new_notes"
             gh release edit $tag --notes "$updated_notes"
           } else {
