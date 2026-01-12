@@ -394,10 +394,6 @@ jobs:
           del "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib"
           rmdir /S /Q "${{ env.MESA_INSTALL_DIR }}\share"
           echo "Done. Lavapipe ready for packaging."
-          echo "Creating LLVMPipe install folder: ${{ env.MESA_INSTALL_DIR_LLVMPIPE }}"
-          mkdir "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}"
-          mv "${{ env.MESA_INSTALL_DIR }}\*" "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\"
-          echo "Done. LLVMPipe ready for packaging."
 
       - name: ❔ [MESA] Check install folder, to see if everything is present (after moving)
         run: |
@@ -423,7 +419,7 @@ jobs:
       - name: 📦 Package Artifact - LLVMPipe (libgl-gdi/OpenGL + GLESv1 + GLESv2 + EGL + wgl/libgallium)
         run: |
           dir /S /B "${{ env.MESA_INSTALL_DIR }}"
-          7z a -tzip -mx9 "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\*"
+          7z a -tzip -mx9 "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR }}\*"
 
       - name: 📦 🚀 Upload Artifact - LavaPipe
         uses: actions/upload-artifact@v6 # https://github.com/actions/upload-artifact
