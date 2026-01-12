@@ -83,6 +83,8 @@ jobs:
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
+      MESA_INSTALL_DIR_LAVAPIPE: ${{github.workspace}}\mesa\install\lavapipe-${{ matrix.config.artifact_arch }}
+      MESA_INSTALL_DIR_LLVMPIPE: ${{github.workspace}}\mesa\install\llvmpipe-${{ matrix.config.artifact_arch }}
       LLVM_VERSION:       '21.1.8'
       LLVM_PROJECT_DIR:   ${{github.workspace}}\llvm-project
       LLVM_CMAKE_DIR:     ${{github.workspace}}\llvm-project\cmake
@@ -350,7 +352,7 @@ jobs:
           -D egl=enabled                                                      ^
           -D gles1=enabled                                                    ^
           -D gles2=enabled                                                    ^
-          -D build-tests=false                                                ^
+          -D build-tests=false
 
       - name: 🙏 [MESA] Build + Install
         run: |
@@ -363,16 +365,16 @@ jobs:
 
       - name: Move Lavapipe driver to standalone folder for packaging
         run: |
-          mkdir "${{ env.MESA_INSTALL_DIR }}\lavapipe"
-          mkdir "${{ env.MESA_INSTALL_DIR }}\lavapipe\bin"
-          mkdir "${{ env.MESA_INSTALL_DIR }}\lavapipe\lib"
-          mkdir "${{ env.MESA_INSTALL_DIR }}\lavapipe\share\vulkan\icd.d"
-          copy "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll" "${{ env.MESA_INSTALL_DIR }}\lavapipe\bin\vulkan_lvp.dll"
-          copy "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib" "${{ env.MESA_INSTALL_DIR }}\lavapipe\lib\vulkan_lvp.lib"
-          copy "${{ env.MESA_INSTALL_DIR }}\share\vulkan\icd.d\lvp_icd.x86_64.json" "${{ env.MESA_INSTALL_DIR }}\lavapipe\share\vulkan\icd.d\lvp_icd.x86_64.json"
-          del "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll"
-          del "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib"
-          rmdir /S /Q "${{ env.MESA_INSTALL_DIR }}\share"
+          mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
+          mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin"
+          mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib"
+          mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d"
+          copy "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\bin\vulkan_lvp.dll" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin\vulkan_lvp.dll"
+          copy "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\lib\vulkan_lvp.lib" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib\vulkan_lvp.lib"
+          copy "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\share\vulkan\icd.d\lvp_icd.x86_64.json" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d\lvp_icd.x86_64.json"
+          del "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\bin\vulkan_lvp.dll"
+          del "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\lib\vulkan_lvp.lib"
+          rmdir /S /Q "%MESA_INSTALL_DIR_LLVMPIPE%\share"
 
       # Versioning Pattern: "lavapipe-win64-24.3.4.zip"
       - name: 🏷️ Versionize Artifacts
@@ -389,13 +391,13 @@ jobs:
       - name: 📦 Package Artifact - LavaPipe (Vulkan)
         run: |
           dir /S /B "${{ env.MESA_INSTALL_DIR }}"
-          7z a -tzip -mx9 "${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR }}\lavapipe\*"
-          rmdir /S /Q "${{ env.MESA_INSTALL_DIR }}\lavapipe"
+          7z a -tzip -mx9 "${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\*"
+          rmdir /S /Q "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
 
       - name: 📦 Package Artifact - LLVMPipe (libgl-gdi/OpenGL + GLESv1 + GLESv2 + EGL + wgl/libgallium)
         run: |
           dir /S /B "${{ env.MESA_INSTALL_DIR }}"
-          7z a -tzip -mx9 "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR }}\*"
+          7z a -tzip -mx9 "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\*"
 
       - name: 📦 🚀 Upload Artifact - LavaPipe
         uses: actions/upload-artifact@v6 # https://github.com/actions/upload-artifact
