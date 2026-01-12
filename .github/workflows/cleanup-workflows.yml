@@ -66,7 +66,8 @@ jobs:
             // list the workflows runs to remove here
             const workflows = [
               'build-mesa.yml',
-              'build-swiftshader.yml'
+              'build-swiftshader.yml',
+              'build-version-cache.yml'
             ]
             let runs_to_delete = [];
             for (const workflow of workflows) {
