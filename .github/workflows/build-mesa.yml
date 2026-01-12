@@ -275,7 +275,7 @@ jobs:
       # https://community.chocolatey.org/packages/meson
       # https://community.chocolatey.org/packages/Lua lua53, lua54 not even on choco
       # https://community.chocolatey.org/packages/libpng is required for "screenshot" in lavapipe
-      - name: 🔽 Install Meson
+      - name: 🔽 Install Tools - Meson, Winflexbison, PkgConfigLite
         run: |
           choco install meson winflexbison3 pkgconfiglite lua libpng
           refreshenv
@@ -380,15 +380,18 @@ jobs:
 
       - name: Move Lavapipe driver to standalone folder for packaging
         run: |
+          echo "Creating Lavapipe install folder: ${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
           mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
           mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin"
           mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib"
           mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d"
-          copy "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\bin\vulkan_lvp.dll" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin\vulkan_lvp.dll"
-          copy "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\lib\vulkan_lvp.lib" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib\vulkan_lvp.lib"
-          copy "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\share\vulkan\icd.d\lvp_icd.x86_64.json" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d\lvp_icd.x86_64.json"
-          del "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\bin\vulkan_lvp.dll"
-          del "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\lib\vulkan_lvp.lib"
+          echo "Copying Lavapipe files to standalone folder."
+          copy "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin\vulkan_lvp.dll"
+          copy "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib\vulkan_lvp.lib"
+          copy "${{ env.MESA_INSTALL_DIR }}\share\vulkan\icd.d\lvp_icd.x86_64.json" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d\lvp_icd.x86_64.json"
+          echo "Removing Lavapipe files from main install folder."
+          del "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll"
+          del "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib"
           rmdir /S /Q "%MESA_INSTALL_DIR_LLVMPIPE%\share"
 
       # Versioning Pattern: "lavapipe-win64-24.3.4.zip"
