@@ -56,7 +56,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        # What a shit show..
+        # What a shitshow..
         - {
             os: "windows-2025",
             msvc_arch: "amd64",
@@ -150,6 +150,13 @@ jobs:
           restore-keys: |
             mesa-build-${{ runner.os }}-${{ github.ref }}
             mesa-build-${{ runner.os }}
+
+      #- name: 🎯 [CACHE] Restore LLVM build cache
+      #  id: restore-llvm-cache
+      #  uses: actions/cache/restore@v4
+      #  with:
+      #    path: ${{ env.LLVM_BUILD_DIR }}
+      #    key: cache-${{ runner.os }}-llvm-${{ env.LLVM_VERSION }}-${{ hashFiles('llvm-project/llvm/**/CMakeLists.txt') }}
 
       - name: 🛠️ [LLVM] Make project folder
         run: |
@@ -248,6 +255,14 @@ jobs:
           ninja -C ${{ env.LLVM_BUILD_DIR }}
           ninja -C ${{ env.LLVM_BUILD_DIR }} install
 
+      #- name: 🎯 [CACHE] Save LLVM build cache
+      #  uses: actions/cache@v4
+      #  id: save-llvm-cache
+      #  if: always() && steps.restore-llvm-cache.outputs.cache-hit != 'true'
+      #  with:
+      #    path: ${{ env.LLVM_BUILD_DIR }}
+      #    key: cache-${{ runner.os }}-llvm-${{ env.LLVM_VERSION }}-${{ hashFiles('llvm-project/llvm/**/CMakeLists.txt') }}
+
       - name: 🛠️ [LLVM] Add to PATH
         shell: pwsh
         run: |
@@ -262,7 +277,7 @@ jobs:
       # https://community.chocolatey.org/packages/libpng is required for "screenshot" in lavapipe
       - name: 🔽 Install Meson
         run: |
-          choco install meson winflexbison pkgconfiglite lua libpng
+          choco install meson winflexbison3 pkgconfiglite lua libpng
           refreshenv
 
       - name: 🛠️ [MESON] Add to PATH
@@ -297,7 +312,7 @@ jobs:
         run: |
           pip install packaging mako PyYAML
 
-      # update_glslang_sources fetches the dependencies: goggletest, SPIRV-Tools, SPIRV-Headers
+      # update_glslang_sources fetches the dependencies: googletest, SPIRV-Tools, SPIRV-Headers
       - name: 🔽 [GLSLANG] Build + Install glslang
         run: |
           git clone --depth=1 --no-tags --single-branch --branch ${{ env.GLSLANG_TAG }} https://github.com/KhronosGroup/glslang
