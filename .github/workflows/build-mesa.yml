@@ -392,7 +392,7 @@ jobs:
           echo "Removing Lavapipe files from main install folder."
           del "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll"
           del "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib"
-          rmdir /S /Q "%MESA_INSTALL_DIR_LLVMPIPE%\share"
+          rmdir /S /Q "${{ env.MESA_INSTALL_DIR }}\share"
 
       # Versioning Pattern: "lavapipe-win64-24.3.4.zip"
       - name: 🏷️ Versionize Artifacts
