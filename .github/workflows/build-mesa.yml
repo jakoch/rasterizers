@@ -378,7 +378,7 @@ jobs:
         run: |
           dir /S /B ${{ env.MESA_INSTALL_DIR }}
 
-      - name: Move Lavapipe driver to standalone folder for packaging
+      - name: 📦 Move Lavapipe driver to standalone folder for packaging
         run: |
           echo "Creating Lavapipe install folder: ${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
           mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
@@ -393,6 +393,15 @@ jobs:
           del "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll"
           del "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib"
           rmdir /S /Q "${{ env.MESA_INSTALL_DIR }}\share"
+          echo "Done. Lavapipe ready for packaging."
+          echo "Creating LLVMPipe install folder: ${{ env.MESA_INSTALL_DIR_LLVMPIPE }}"
+          mkdir "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}"
+          mv "${{ env.MESA_INSTALL_DIR }}\*" "${{ env.MESA_INSTALL_DIR_LLVMPIPE }}\"
+          echo "Done. LLVMPipe ready for packaging."
+
+      - name: ❔ [MESA] Check install folder, to see if everything is present (after moving)
+        run: |
+          dir /S /B ${{ env.MESA_INSTALL_DIR }}
 
       # Versioning Pattern: "lavapipe-win64-24.3.4.zip"
       - name: 🏷️ Versionize Artifacts
@@ -405,7 +414,6 @@ jobs:
           echo "MESA_LLVMPIPE_ARTIFACT_NAME=llvmpipe-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
           echo "MESA_LLVMPIPE_ARTIFACT_ZIPFILE=llvmpipe-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
 
-      # The lavapipe folder is removed. To package the LLVMPipe driver using the install dir.
       - name: 📦 Package Artifact - LavaPipe (Vulkan)
         run: |
           dir /S /B "${{ env.MESA_INSTALL_DIR }}"
