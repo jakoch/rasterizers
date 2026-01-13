@@ -106,7 +106,10 @@ jobs:
       #  shell: cmd
 
       # https://community.chocolatey.org/packages/cmake
+      # This doesnt work on windows-11-arm, because chocolatey doesn't provide ARM packages...
+      # so lets fallback to the system-installed cmake.
       - name: 🔽 Install CMake
+        if: ${{ matrix.config.os == 'windows-2025' }}
         run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
 
       # Reminder: This step requires that the CMakePresets for CI contain
