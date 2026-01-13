@@ -85,6 +85,7 @@ jobs:
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
       MESA_INSTALL_DIR_LAVAPIPE: ${{github.workspace}}\mesa\install\lavapipe-${{ matrix.config.artifact_arch }}
       MESA_INSTALL_DIR_LLVMPIPE: ${{github.workspace}}\mesa\install\llvmpipe-${{ matrix.config.artifact_arch }}
+      MESA_INSTALL_DIR_D3D12: ${{github.workspace}}\mesa\install\d3d12-${{ matrix.config.artifact_arch }}
       LLVM_VERSION:       '21.1.8'
       LLVM_PROJECT_DIR:   ${{github.workspace}}\llvm-project
       LLVM_CMAKE_DIR:     ${{github.workspace}}\llvm-project\cmake
@@ -386,11 +387,11 @@ jobs:
           mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin"
           mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib"
           mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d"
-          echo "Copying Lavapipe files to standalone folder."
+          echo "Copying Lavapipe files from install to standalone folder."
           copy "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin\vulkan_lvp.dll"
           copy "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib\vulkan_lvp.lib"
           copy "${{ env.MESA_INSTALL_DIR }}\share\vulkan\icd.d\lvp_icd.x86_64.json" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d\lvp_icd.x86_64.json"
-          echo "Removing Lavapipe files from main install folder."
+          echo "Removing Lavapipe files from install folder to allow packaging of LLVMPipe only."
           del "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll"
           del "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib"
           rmdir /S /Q "${{ env.MESA_INSTALL_DIR }}\share"
@@ -400,7 +401,7 @@ jobs:
         run: |
           dir /S /B ${{ env.MESA_INSTALL_DIR }}
 
-      - name: 🖋️ [MESA] Setup (d3d12, dzn (microsoft-experimental))
+      - name: 🖋️ [MESA] Setup (d3d12, microsoft-experimental = dzn)
         env:
           CC:  "sccache cl"
           CXX: "sccache cl"
@@ -410,7 +411,7 @@ jobs:
           meson setup                                                         ^
           ${{ env.MESA_BUILD_DIR }}-d3d12                                     ^
           ${{ env.MESA_SOURCE_DIR }}                                          ^
-           --prefix="${{ env.MESA_INSTALL_DIR }}-d3d12-${{ matrix.config.artifact_arch }}" ^
+           --prefix="${{ env.MESA_INSTALL_DIR_D3D12 }}" ^
            --default-library=static                                           ^
           -D buildtype=release                                                ^
           -D platforms=windows                                                ^
@@ -433,21 +434,38 @@ jobs:
           ninja -C ${{ env.MESA_BUILD_DIR }}-d3d12
           ninja -C ${{ env.MESA_BUILD_DIR }}-d3d12 install
 
-      # Copy dxil.dll to the install folder, if present
-      # Location is e.g. C:\Program Files (x86)\Windows Kits\10\Redist\D3D\arm64\dxil.dll
+      # Copy the DXIL signing library (dxil.dll) from the system to the installation folder, if it exists.
+      # Example location: C:\Program Files (x86)\Windows Kits\10\Redist\D3D\arm64\dxil.dll
       - name: Copy dxil.dll to install folder, if present
         run: |
           if exist "%ProgramFiles(x86)%\Windows Kits\10\Redist\D3D\${{ matrix.config.artifact_arch }}\dxil.dll" (
             echo "Copying dxil.dll from Windows Kits Redist folder."
-            copy /y "%ProgramFiles(x86)%\Windows Kits\10\Redist\D3D\${{ matrix.config.artifact_arch }}\dxil.dll" mesa-d3d12-${{ matrix.config.artifact_arch }}\bin\
+            copy /y "%ProgramFiles(x86)%\Windows Kits\10\Redist\D3D\${{ matrix.config.artifact_arch }}\dxil.dll" ${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\
           ) else if exist "%WindowsSdkVerBinPath%${{ matrix.config.artifact_arch }}\dxil.dll" (
             echo "Copying dxil.dll from Windows SDK Bin folder."
-            copy /y "%WindowsSdkVerBinPath%${{ matrix.config.artifact_arch }}\dxil.dll" mesa-d3d12-${{ matrix.config.artifact_arch }}\bin\
+            copy /y "%WindowsSdkVerBinPath%${{ matrix.config.artifact_arch }}\dxil.dll" ${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\
           )
 
       - name: ❔ [MESA] Check install folder, to see if everything is present (after install)
         run: |
-          dir /S /B ${{ env.MESA_INSTALL_DIR }}-d3d12-${{ matrix.config.artifact_arch }}
+          dir /S /B ${{ env.MESA_INSTALL_DIR_D3D12 }}
+
+      - name: 📦 [MESA] Move microsoft-experimental (dzn) driver to standalone folder for packaging
+        run: |
+          echo "Creating microsoft-experimental (dzn) install folder: ${{ env.MESA_INSTALL_DIR_D3D12 }}"
+          mkdir "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn"
+          mkdir "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\bin"
+          mkdir "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\lib"
+          mkdir "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\share\vulkan\icd.d"
+          echo "Copying dzn files from install to standalone folder."
+          copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\vulkan_dzn.dll" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\bin\vulkan_dzn.dll"
+          copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\lib\vulkan_dzn.lib" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\lib\vulkan_dzn.lib"
+          copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\share\vulkan\icd.d\dzn_icd.x86_64.json" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\share\vulkan\icd.d\dzn_icd.x86_64.json"
+          echo "Removing dzn files from install folder to allow packaging of d3d12 only.
+          del "${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\vulkan_dzn.dll
+          del "${{ env.MESA_INSTALL_DIR_D3D12 }}\lib\vulkan_dzn.lib
+          rmdir /S /Q "${{ env.MESA_INSTALL_DIR_D3D12 }}\share"
+          echo "Done. Microsoft-experimental (dzn) ready for packaging."
 
       # Versioning Pattern: "lavapipe-x64-24.3.4.zip"
       - name: 🏷️ Versionize Artifacts
@@ -459,6 +477,10 @@ jobs:
           echo "MESA_LAVAPIPE_ARTIFACT_ZIPFILE=lavapipe-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
           echo "MESA_LLVMPIPE_ARTIFACT_NAME=llvmpipe-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
           echo "MESA_LLVMPIPE_ARTIFACT_ZIPFILE=llvmpipe-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
+          echo "MESA_D3D12_ARTIFACT_NAME=d3d12-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
+          echo "MESA_D3D12_ARTIFACT_ZIPFILE=d3d12-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
+          echo "MESA_DZN_ARTIFACT_NAME=dzn-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
+          echo "MESA_DZN_ARTIFACT_ZIPFILE=dzn-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
 
       - name: 📦 Package Artifact - LavaPipe (Vulkan)
         run: |
@@ -470,6 +492,17 @@ jobs:
         run: |
           dir /S /B "${{ env.MESA_INSTALL_DIR }}"
           7z a -tzip -mx9 "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR }}\*"
+
+      - name: 📦 Package Artifact - Microsoft-Experimental (dzn)
+        run: |
+          dir /S /B "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn"
+          7z a -tzip -mx9 "${{ env.MESA_DZN_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\*"
+          rmdir /S /Q "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn"
+
+      - name: 📦 Package Artifact - D3D12 (Direct3D 12)
+        run: |
+          dir /S /B "${{ env.MESA_INSTALL_DIR_D3D12 }}"
+          7z a -tzip -mx9 "${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_D3D12 }}\*"
 
       - name: 📦 🚀 Upload Artifact - LavaPipe
         uses: actions/upload-artifact@v6 # https://github.com/actions/upload-artifact
@@ -484,6 +517,22 @@ jobs:
         with:
           name: ${{ env.MESA_LLVMPIPE_ARTIFACT_NAME }}
           path: ${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}
+          compression-level: 0
+          retention-days: 3
+
+      - name: 📦 🚀 Upload Artifact - Microsoft-Experimental (dzn)
+        uses: actions/upload-artifact@v4 #
+        with:
+          name: ${{ env.MESA_DZN_ARTIFACT_NAME }}
+          path: ${{ env.MESA_DZN_ARTIFACT_ZIPFILE }}
+          compression-level: 0
+          retention-days: 3
+
+      - name: 📦 🚀 Upload Artifact - D3D12
+        uses: actions/upload-artifact@v4 #
+        with:
+          name: ${{ env.MESA_D3D12_ARTIFACT_NAME }}
+          path: ${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}
           compression-level: 0
           retention-days: 3
 
@@ -503,6 +552,8 @@ jobs:
           $tag = "${{ env.RELEASE_VERSION_TAG }}"
           $new_notes = "• Mesa Lavapipe for Windows (${{ matrix.config.artifact_arch }}, VC17) ${{ env.MESA_LAVAPIPE_VERSION }}"
           $new_notes += "`n• Mesa LLVMPipe for Windows (${{ matrix.config.artifact_arch }}, VC17) ${{ env.MESA_LAVAPIPE_VERSION }}"
+          $new_notes += "`n• Mesa D3D12 for Windows (${{ matrix.config.artifact_arch }}, VC17)"
+          $new_notes += "`n• Mesa DZN (Microsoft-Experimental) for Windows (${{ matrix.config.artifact_arch }}, VC17)"
           $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
           if ($?) {
             Write-Host "✅ Release $tag already exists. Appending new notes."
@@ -525,4 +576,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}" --clobber
+          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_DZN_ARTIFACT_ZIPFILE }}" "${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}" --clobber
