@@ -460,7 +460,7 @@ jobs:
           echo "Copying dzn files from install to standalone folder."
           copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\vulkan_dzn.dll" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\bin\vulkan_dzn.dll"
           copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\lib\vulkan_dzn.lib" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\lib\vulkan_dzn.lib"
-          copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\share\vulkan\icd.d\dzn_icd.x86_64.json" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\share\vulkan\icd.d\dzn_icd.x86_64.json"
+          copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\share\vulkan\icd.d\dzn_icd.${{ matrix.config.artifact_arch }}.json" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\share\vulkan\icd.d\dzn_icd.${{ matrix.config.artifact_arch }}.json"
           echo "Removing dzn files from install folder to allow packaging of d3d12 only.
           del "${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\vulkan_dzn.dll
           del "${{ env.MESA_INSTALL_DIR_D3D12 }}\lib\vulkan_dzn.lib
