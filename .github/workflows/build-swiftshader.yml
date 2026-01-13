@@ -61,12 +61,12 @@ jobs:
       matrix:
         config:
         # What a shitshow..
-        - {
-            os: "windows-2025",
-            msvc_arch: "amd64",
-            cmake_generator: "x64",
-            artifact_arch: "x64"
-          }
+        #- {
+        #    os: "windows-2025",
+        #    msvc_arch: "amd64",
+        #    cmake_generator: "x64",
+        #    artifact_arch: "x64"
+        #  }
         - {
             os: "windows-11-arm",
             msvc_arch: "amd64_arm64",
@@ -140,7 +140,8 @@ jobs:
             -D SWIFTSHADER_BUILD_GLES_CM=OFF              ^
             -D SWIFTSHADER_BUILD_PVR=OFF                  ^
             -D SWIFTSHADER_BUILD_TESTS=OFF                ^
-            -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+            -D CMAKE_POLICY_VERSION_MINIMUM=3.5           ^
+            -D LLVM_TARGETS_TO_BUILD="AArch64"
 
       - name: 🙏 CMake ➔ Build
         run: |
