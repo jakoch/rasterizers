@@ -43,11 +43,36 @@ jobs:
 
 # ---------------------------------------------------------------------------------------
 
+    # https://swiftshader.googlesource.com/SwiftShader
+    # Mirror: https://github.com/google/swiftshader
     name: "Swiftshader - Win VC17"
 
     # https://github.com/actions/runner-images
-    # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
-    runs-on: windows-2025
+    # Installed Software:
+    # - https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
+    # - https://github.com/actions/partner-runner-images/blob/main/images/arm-windows-11-image.md
+    runs-on: ${{ matrix.config.os }}
+
+    # Do not run the workflow if the actor is dependabot or if the PR is from a fork.
+    if: ${{ ! (startsWith(github.actor, 'dependabot') || github.event.pull_request.head.repo.fork ) }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        # What a shitshow..
+        - {
+            os: "windows-2025",
+            msvc_arch: "amd64",
+            cmake_generator: "x64",
+            artifact_arch: "x64"
+          }
+        - {
+            os: "windows-11-arm",
+            msvc_arch: "amd64_arm64",
+            cmake_generator: "ARM64",
+            artifact_arch: "arm64"
+          }
 
     env:
       BUILD_DIR:   ${{github.workspace}}\swiftshader\build
@@ -58,17 +83,22 @@ jobs:
         shell: cmd
 
     steps:
-      - name: 🤘 Checkout Code
+      # A checkout of this repository is needed for being able to release artifacts.
+      - name: 🤘 Checkout Code - jakoch/rasterizers
         uses: actions/checkout@v6 # https://github.com/actions/checkout
 
-      - name: 🤘 Checkout Code
+      #
+      - name: 🤘 Checkout Code - google/swiftshader
         uses: actions/checkout@v6 # https://github.com/actions/checkout
         with:
           repository: google/swiftshader
           path: swiftshader
 
       - name: 🛠️ Setup Visual Studio Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@v1 # https://github.com/ilammy/msvc-dev-cmd
+        with:
+          # amd64 (x64, default) or amd64_arm64
+          arch: ${{ matrix.config.msvc_arch }}
 
       # https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022
       #- name: 🛠️ Setup Visual Studio Developer Command Prompt
@@ -85,25 +115,29 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1 # https://github.com/hendrikmuhs/ccache-action
         with:
           variant: sccache
-          key: swift-build-${{ github.ref }}
+          key: swift-build-${{ runner.os }}-${{ github.ref }}
           restore-keys: |
-            swift-build-${{ github.ref }}
-            swift-build-
-      
+            swift-build-${{ runner.os }}-${{ github.ref }}
+            swift-build-${{ runner.os }}
+
       # -DCMAKE_POLICY_VERSION_MINIMUM=3.5 was added for third_party/marl/CMakeLists.txt min version issue
       - name: 🖋️ CMake ➔ Configure
         run: |
-          cmake -S swiftshader -B ${{ env.BUILD_DIR }}  ^
-            -G Ninja                                    ^
-            -DCMAKE_BUILD_TYPE=Release                  ^
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache       ^
-            -DSWIFTSHADER_BUILD_VULKAN=ON               ^
-            -DSWIFTSHADER_BUILD_EGL=OFF                 ^
-            -DSWIFTSHADER_BUILD_GLESv2=OFF              ^
-            -DSWIFTSHADER_BUILD_GLES_CM=OFF             ^
-            -DSWIFTSHADER_BUILD_PVR=OFF                 ^
-            -DSWIFTSHADER_BUILD_TESTS=OFF               ^
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake                                           ^
+            -B ${{ env.BUILD_DIR }}                       ^
+            -S swiftshader                                ^
+            -G Ninja                                      ^
+            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache        ^
+            -D CMAKE_SYSTEM_NAME=Windows                  ^
+            -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}  ^
+            -D CMAKE_BUILD_TYPE=Release                   ^
+            -D SWIFTSHADER_BUILD_VULKAN=ON                ^
+            -D SWIFTSHADER_BUILD_EGL=OFF                  ^
+            -D SWIFTSHADER_BUILD_GLESv2=OFF               ^
+            -D SWIFTSHADER_BUILD_GLES_CM=OFF              ^
+            -D SWIFTSHADER_BUILD_PVR=OFF                  ^
+            -D SWIFTSHADER_BUILD_TESTS=OFF                ^
+            -D CMAKE_POLICY_VERSION_MINIMUM=3.5
 
       - name: 🙏 CMake ➔ Build
         run: |
@@ -130,12 +164,12 @@ jobs:
           Write-Output "FileVersionRaw: $fileVersionRaw"
           echo "SWIFTSHADER_VERSION=$fileVersionRaw" >> $env:GITHUB_ENV
 
-      # Versioning Pattern: "swiftshader-win64-5.0.0.0-a2s8ad3.zip"
+      # Versioning Pattern: "swiftshader-(x64|arm64)-5.0.0.0.zip"
       - name: 🏷️ Versionize Artifact
         shell: pwsh
         run: |
-          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-win64-${{ env.SWIFTSHADER_VERSION }}" >> $env:GITHUB_ENV
-          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-win64-${{ env.SWIFTSHADER_VERSION }}.zip" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_NAME=swiftshader-${{ matrix.config.artifact_arch }}-${{ env.SWIFTSHADER_VERSION }}" >> $env:GITHUB_ENV
+          echo "SWIFTSHADER_ARTIFACT_ZIPFILE=swiftshader-${{ matrix.config.artifact_arch }}-${{ env.SWIFTSHADER_VERSION }}.zip" >> $env:GITHUB_ENV
 
       - name: 📦 Package Artifact
         run: |
@@ -163,11 +197,12 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ env.RELEASE_VERSION_TAG }}"
-          $new_notes = "• Swiftshader for Windows (x64, VC17) ${{ env.SWIFTSHADER_VERSION }}`n"
+          $new_notes = "• Swiftshader for Windows (${{ matrix.config.artifact_arch }}, VC17) ${{ env.SWIFTSHADER_VERSION }}`n"
           $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
           if ($?) {
             echo "✅ Release $tag already exists. Appending new notes."
             if ($null -eq $existing_notes) { $existing_notes = "" }
+            $existing_notes = $existing_notes.TrimEnd()
             $updated_notes = "$existing_notes`n$new_notes"
             gh release edit $tag --notes "$updated_notes"
           } else {
