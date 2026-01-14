@@ -133,7 +133,7 @@ jobs:
       #     echo LLVM_DIR=%EXTRACT_DIR%\lib\cmake\llvm>>%GITHUB_ENV%
       #     echo LLVM installed to %EXTRACT_DIR%
 
-       - name: 🛠️ [LLVM] Make project folder
+      - name: 🛠️ [LLVM] Make project folder
         run: |
           mkdir llvm-project
 
@@ -272,23 +272,23 @@ jobs:
       # -D SWIFTSHADER_LESS_DEBUG_INFO=TRUE
       - name: 🖋️ CMake ➔ Configure
         run: |
-          cmake                                                       ^
-            -B ${{ env.SWIFTSHADER_BUILD_DIR }}                                   ^
-            -S swiftshader                                            ^
-            -G Ninja                                                  ^
-            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache                    ^
-            -D CMAKE_SYSTEM_NAME=Windows                              ^
-            -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}              ^
-            -D CMAKE_BUILD_TYPE=Release                               ^
-            -D REACTOR_BACKEND="${{ matrix.config.reactor_backend }}" ^
-            -D SWIFTSHADER_BUILD_PVR=OFF                              ^
-            -D SWIFTSHADER_BUILD_TESTS=OFF                            ^
-            -D SWIFTSHADER_BUILD_BENCHMARKS=OFF                       ^
-            -D SWIFTSHADER_WARNINGS_AS_ERRORS=FALSE                   ^
-            -D CMAKE_POLICY_VERSION_MINIMUM=3.5                       ^
-            -D LLVM_DIR=C:\llvm-aarch64\lib\cmake\llvm                 ^
-            -D CMAKE_C_COMPILER=C:\llvm-aarch64\bin\clang-cl.exe       ^
-            -D CMAKE_CXX_COMPILER=C:\llvm-aarch64\bin\clang-cl.exe
+          cmake                                                                 ^
+            -B ${{ env.SWIFTSHADER_BUILD_DIR }}                                 ^
+            -S swiftshader                                                      ^
+            -G Ninja                                                            ^
+            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache                              ^
+            -D CMAKE_SYSTEM_NAME=Windows                                        ^
+            -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}                        ^
+            -D CMAKE_BUILD_TYPE=Release                                         ^
+            -D REACTOR_BACKEND="${{ matrix.config.reactor_backend }}"           ^
+            -D SWIFTSHADER_BUILD_PVR=OFF                                        ^
+            -D SWIFTSHADER_BUILD_TESTS=OFF                                      ^
+            -D SWIFTSHADER_BUILD_BENCHMARKS=OFF                                 ^
+            -D SWIFTSHADER_WARNINGS_AS_ERRORS=FALSE                             ^
+            -D CMAKE_POLICY_VERSION_MINIMUM=3.5                                 ^
+            -D LLVM_DIR=${{ env.LLVM_INSTALL_DIR }}\lib\cmake\llvm              ^
+            -D CMAKE_C_COMPILER=${{ env.LLVM_INSTALL_DIR }}\bin\clang-cl.exe    ^
+            -D CMAKE_CXX_COMPILER=${{ env.LLVM_INSTALL_DIR }}\bin\clang-cl.exe
 
       - name: 🙏 CMake ➔ Build
         run: |
