@@ -73,7 +73,7 @@ jobs:
             msvc_arch: "amd64_arm64",
             cmake_generator: "ARM64",
             artifact_arch: "arm64",
-            reactor_backend: "Subzero"
+            reactor_backend: "LLVM-Submodule"
           }
 
     env:
