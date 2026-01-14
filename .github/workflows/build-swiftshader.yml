@@ -65,13 +65,15 @@ jobs:
         #    os: "windows-2025",
         #    msvc_arch: "amd64",
         #    cmake_generator: "x64",
-        #    artifact_arch: "x64"
+        #    artifact_arch: "x64",
+        #    reactor_backend: "LLVM"
         #  }
         - {
             os: "windows-11-arm",
             msvc_arch: "amd64_arm64",
             cmake_generator: "ARM64",
-            artifact_arch: "arm64"
+            artifact_arch: "arm64",
+            reactor_backend: "Subzero"
           }
 
     env:
@@ -83,11 +85,15 @@ jobs:
         shell: cmd
 
     steps:
-      # A checkout of this repository is needed for being able to release artifacts.
+      - name: Runner OS
+        run: |
+          echo "We are running on ${{ runner.os }} with arch ${{ runner.arch }}."
+          node -e "console.log(require('os').platform() + '-' + require('os').arch())"
+
+      # A checkout of this repo is required to push artifacts to GitHub Releases.
       - name: 🤘 Checkout Code - jakoch/rasterizers
         uses: actions/checkout@v6 # https://github.com/actions/checkout
 
-      #
       - name: 🤘 Checkout Code - google/swiftshader
         uses: actions/checkout@v6 # https://github.com/actions/checkout
         with:
@@ -123,25 +129,30 @@ jobs:
             swift-build-${{ runner.os }}-${{ github.ref }}
             swift-build-${{ runner.os }}
 
-      # -DCMAKE_POLICY_VERSION_MINIMUM=3.5 was added for third_party/marl/CMakeLists.txt min version issue
+      # For build options see
+      #
+      # https://github.com/google/swiftshader/blob/master/CMakeLists.txt#L162
+      #
+      # - D REACTOR_BACKEND="" can be one of LLVM, LLVM-Submodule, Subzero
+      #
+      # -D CMAKE_POLICY_VERSION_MINIMUM=3.5 was added for third_party/marl/CMakeLists.txt min version issue
+      # -D SWIFTSHADER_LESS_DEBUG_INFO=TRUE
       - name: 🖋️ CMake ➔ Configure
         run: |
-          cmake                                           ^
-            -B ${{ env.BUILD_DIR }}                       ^
-            -S swiftshader                                ^
-            -G Ninja                                      ^
-            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache        ^
-            -D CMAKE_SYSTEM_NAME=Windows                  ^
-            -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}  ^
-            -D CMAKE_BUILD_TYPE=Release                   ^
-            -D SWIFTSHADER_BUILD_VULKAN=ON                ^
-            -D SWIFTSHADER_BUILD_EGL=OFF                  ^
-            -D SWIFTSHADER_BUILD_GLESv2=OFF               ^
-            -D SWIFTSHADER_BUILD_GLES_CM=OFF              ^
-            -D SWIFTSHADER_BUILD_PVR=OFF                  ^
-            -D SWIFTSHADER_BUILD_TESTS=OFF                ^
-            -D CMAKE_POLICY_VERSION_MINIMUM=3.5           ^
-            -D LLVM_TARGETS_TO_BUILD="AArch64"
+          cmake                                                       ^
+            -B ${{ env.BUILD_DIR }}                                   ^
+            -S swiftshader                                            ^
+            -G Ninja                                                  ^
+            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache                    ^
+            -D CMAKE_SYSTEM_NAME=Windows                              ^
+            -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}              ^
+            -D CMAKE_BUILD_TYPE=Release                               ^
+            -D REACTOR_BACKEND="${{ matrix.config.reactor_backend }}" ^
+            -D SWIFTSHADER_BUILD_PVR=OFF                              ^
+            -D SWIFTSHADER_BUILD_TESTS=OFF                            ^
+            -D SWIFTSHADER_BUILD_BENCHMARKS=OFF                       ^
+            -D SWIFTSHADER_WARNINGS_AS_ERRORS=FALSE                   ^
+            -D CMAKE_POLICY_VERSION_MINIMUM=3.5
 
       - name: 🙏 CMake ➔ Build
         run: |
@@ -167,6 +178,18 @@ jobs:
           $fileVersionRaw = $versionInfo.FileVersionRaw
           Write-Output "FileVersionRaw: $fileVersionRaw"
           echo "SWIFTSHADER_VERSION=$fileVersionRaw" >> $env:GITHUB_ENV
+
+      # degenerate library versioning detected,
+      # see https://github.com/google/swiftshader/blob/master/src/commit_id.py
+      # WTF. thanks for nothing google.
+      #- name: 🧩 Get SwiftShader version
+      #  run: |
+      #    cd ${{github.workspace}}/swiftshader
+      #    commit_count=$(git rev-list --count HEAD)
+      #    commit_hash=$(git rev-parse --short=10 HEAD)
+      #    SWIFTSHADER_VERSION="r${commit_count}.${commit_hash}"
+      #    echo "Extracted SwiftShader version: $SWIFTSHADER_VERSION"
+      #    echo "SWIFTSHADER_VERSION=$SWIFTSHADER_VERSION" >> $GITHUB_ENV
 
       # Versioning Pattern: "swiftshader-(x64|arm64)-5.0.0.0.zip"
       - name: 🏷️ Versionize Artifact
