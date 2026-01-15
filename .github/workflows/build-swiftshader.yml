@@ -316,7 +316,7 @@ jobs:
             -D SWIFTSHADER_BUILD_BENCHMARKS=OFF                                 ^
             -D SWIFTSHADER_WARNINGS_AS_ERRORS=FALSE                             ^
             -D CMAKE_POLICY_VERSION_MINIMUM=3.5                                 ^
-            -D CMAKE_SHARED_LINKER_FLAGS="/LIBPATH:"C:/Program Files/LLVM/lib" LLVMAArch64AsmParser.lib LLVMAArch64CodeGen.lib LLVMAArch64Desc.lib LLVMAArch64Info.lib LLVMAArch64Utils.lib LLVMCore.lib LLVMSupport.lib LLVMCodeGen.lib LLVMTarget.lib LLVMExecutionEngine.lib LLVMOrcJIT.lib"
+            -D CMAKE_SHARED_LINKER_FLAGS="/LIBPATH:C:/PROGRA~1/LLVM/lib LLVMAArch64AsmParser.lib LLVMAArch64CodeGen.lib LLVMAArch64Desc.lib LLVMAArch64Info.lib LLVMAArch64Utils.lib LLVMCore.lib LLVMSupport.lib LLVMCodeGen.lib LLVMTarget.lib LLVMExecutionEngine.lib LLVMOrcJIT.lib"
 
       # -D LLVM_DIR=${{ env.LLVM_INSTALL_DIR }}\lib\cmake\llvm              ^
       # -D CMAKE_C_COMPILER=${{ env.LLVM_INSTALL_DIR }}\bin\clang-cl.exe    ^
