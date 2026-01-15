@@ -135,45 +135,45 @@ jobs:
           echo LLVM_DIR=%EXTRACT_DIR%\lib\cmake\llvm>>%GITHUB_ENV%
           echo LLVM installed to %EXTRACT_DIR%
 
-      - name: 🛠️ [LLVM] Make project folder
-        run: |
-          mkdir llvm-project
+      # - name: 🛠️ [LLVM] Make project folder
+      #   run: |
+      #     mkdir llvm-project
 
-      - name: 🔽 [LLVM] Install LLVM into llvm-project folder
-        working-directory: ${{ env.LLVM_PROJECT_DIR }}
-        run: |
-          curl -sfL -o llvm-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/llvm-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -txz llvm-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -ttar llvm-${{ env.LLVM_VERSION }}.src.tar
-          del llvm-${{ env.LLVM_VERSION }}.src.tar.xz
-          del llvm-${{ env.LLVM_VERSION }}.src.tar
-          mv llvm-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_SOURCE_DIR }}
+      # - name: 🔽 [LLVM] Install LLVM into llvm-project folder
+      #   working-directory: ${{ env.LLVM_PROJECT_DIR }}
+      #   run: |
+      #     curl -sfL -o llvm-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/llvm-${{ env.LLVM_VERSION }}.src.tar.xz
+      #     7z x -bb0 -txz llvm-${{ env.LLVM_VERSION }}.src.tar.xz
+      #     7z x -bb0 -ttar llvm-${{ env.LLVM_VERSION }}.src.tar
+      #     del llvm-${{ env.LLVM_VERSION }}.src.tar.xz
+      #     del llvm-${{ env.LLVM_VERSION }}.src.tar
+      #     mv llvm-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_SOURCE_DIR }}
 
-      - name: 🔽 [LLVM] Install CMAKE modules into llvm-project folder
-        working-directory: ${{ env.LLVM_PROJECT_DIR }}
-        run: |
-          curl -sfL -o cmake-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/cmake-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -txz cmake-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -ttar cmake-${{ env.LLVM_VERSION }}.src.tar
-          del cmake-${{ env.LLVM_VERSION }}.src.tar.xz
-          del cmake-${{ env.LLVM_VERSION }}.src.tar
-          mv cmake-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_CMAKE_DIR }}
+      # - name: 🔽 [LLVM] Install CMAKE modules into llvm-project folder
+      #   working-directory: ${{ env.LLVM_PROJECT_DIR }}
+      #   run: |
+      #     curl -sfL -o cmake-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/cmake-${{ env.LLVM_VERSION }}.src.tar.xz
+      #     7z x -bb0 -txz cmake-${{ env.LLVM_VERSION }}.src.tar.xz
+      #     7z x -bb0 -ttar cmake-${{ env.LLVM_VERSION }}.src.tar
+      #     del cmake-${{ env.LLVM_VERSION }}.src.tar.xz
+      #     del cmake-${{ env.LLVM_VERSION }}.src.tar
+      #     mv cmake-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_CMAKE_DIR }}
 
-      - name: 🔽 [LLVM] Install Third-Party into llvm-project folder
-        working-directory: ${{ env.LLVM_PROJECT_DIR }}
-        run: |
-          curl -sfL -o third-party-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/third-party-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -txz third-party-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -ttar third-party-${{ env.LLVM_VERSION }}.src.tar
-          del third-party-${{ env.LLVM_VERSION }}.src.tar.xz
-          del third-party-${{ env.LLVM_VERSION }}.src.tar
-          mv third-party-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_DEPS_DIR }}
+      # - name: 🔽 [LLVM] Install Third-Party into llvm-project folder
+      #   working-directory: ${{ env.LLVM_PROJECT_DIR }}
+      #   run: |
+      #     curl -sfL -o third-party-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/third-party-${{ env.LLVM_VERSION }}.src.tar.xz
+      #     7z x -bb0 -txz third-party-${{ env.LLVM_VERSION }}.src.tar.xz
+      #     7z x -bb0 -ttar third-party-${{ env.LLVM_VERSION }}.src.tar
+      #     del third-party-${{ env.LLVM_VERSION }}.src.tar.xz
+      #     del third-party-${{ env.LLVM_VERSION }}.src.tar
+      #     mv third-party-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_DEPS_DIR }}
 
-      # in-source build, dir: llvm-project/llvm/build
-      - name: 🛠️ [LLVM] Make build folder
-        working-directory: ${{ env.LLVM_SOURCE_DIR }}
-        run: |
-          mkdir build
+      # # in-source build, dir: llvm-project/llvm/build
+      # - name: 🛠️ [LLVM] Make build folder
+      #   working-directory: ${{ env.LLVM_SOURCE_DIR }}
+      #   run: |
+      #     mkdir build
 
       #- name: ❔ CHECK important folders, to see if everything is present (before building)
       #  run: |
@@ -181,87 +181,90 @@ jobs:
 
       # -D LLVM_TARGETS_TO_BUILD="AArch64;ARM;X86" ^
       # -D CMAKE_CXX_COMPILER_LAUNCHER=sccache                         ^
-      - name: 🖋️ [LLVM] Configure
-        working-directory: ${{ env.LLVM_BUILD_DIR }}
-        run: |
-          cmake                                                            ^
-            -B ${{ env.LLVM_BUILD_DIR }}                                   ^
-            -S ${{ env.LLVM_SOURCE_DIR }}                                  ^
-            -G Ninja                                                       ^
-            -D CMAKE_SYSTEM_NAME=Windows                                   ^
-            -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}                   ^
-            -D CMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}"          ^
-            -D CMAKE_BUILD_TYPE="Release"                                  ^
-            -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded                    ^
-            -D LLVM_HOST_TRIPLE=${{ matrix.config.llvm_triple }}           ^
-            -D LLVM_DEFAULT_TARGET_TRIPLE=${{ matrix.config.llvm_triple }} ^
-            -D LLVM_TARGETS_TO_BUILD=${{ matrix.config.llvm_target }}      ^
-            -D LLVM_LINK_LLVM_DYLIB=OFF                                    ^
-            -D LLVM_BUILD_BENCHMARKS=OFF                                   ^
-            -D LLVM_BUILD_DOCS=OFF                                         ^
-            -D LLVM_BUILD_EXAMPLES=OFF                                     ^
-            -D LLVM_BUILD_LLVM_DYLIB=ON                                    ^
-            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
-            -D LLVM_BUILD_TESTS=OFF                                        ^
-            -D LLVM_BUILD_UTILS=OFF                                        ^
-            -D LLVM_ENABLE_ASSERTIONS=OFF                                  ^
-            -D LLVM_ENABLE_BACKTRACES=OFF                                  ^
-            -D LLVM_ENABLE_BINDINGS=OFF                                    ^
-            -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                             ^
-            -D LLVM_ENABLE_DOXYGEN=OFF                                     ^
-            -D LLVM_ENABLE_IDE=OFF                                         ^
-            -D LLVM_ENABLE_LIBEDIT=OFF                                     ^
-            -D LLVM_ENABLE_LIBPFM=OFF                                      ^
-            -D LLVM_ENABLE_LIBXML2=OFF                                     ^
-            -D LLVM_ENABLE_PEDANTIC=OFF                                    ^
-            -D LLVM_ENABLE_PLUGINS=OFF                                     ^
-            -D LLVM_ENABLE_SPHINX=OFF                                      ^
-            -D LLVM_ENABLE_UNWIND_TABLES=OFF                               ^
-            -D LLVM_ENABLE_WARNINGS=OFF                                    ^
-            -D LLVM_ENABLE_WERROR=OFF                                      ^
-            -D LLVM_ENABLE_Z3_SOLVER=OFF                                   ^
-            -D LLVM_ENABLE_ZLIB=OFF                                        ^
-            -D LLVM_INCLUDE_BENCHMARKS=OFF                                 ^
-            -D LLVM_INCLUDE_DOCS=OFF                                       ^
-            -D LLVM_INCLUDE_EXAMPLES=OFF                                   ^
-            -D LLVM_INCLUDE_TESTS=OFF                                      ^
-            -D LLVM_INCLUDE_UTILS=OFF                                      ^
-            -D LLVM_OPTIMIZED_TABLEGEN=ON                                  ^
-            -D LLVM_DIR=C:\llvm-aarch64\lib\cmake\llvm                     ^
-            -D CMAKE_C_COMPILER=C:\llvm-aarch64\bin\clang-cl.exe           ^
-            -D CMAKE_CXX_COMPILER=C:\llvm-aarch64\bin\clang-cl.exe
+      # - name: 🖋️ [LLVM] Configure
+      #   working-directory: ${{ env.LLVM_BUILD_DIR }}
+      #   run: |
+      #     cmake                                                            ^
+      #       -B ${{ env.LLVM_BUILD_DIR }}                                   ^
+      #       -S ${{ env.LLVM_SOURCE_DIR }}                                  ^
+      #       -G Ninja                                                       ^
+      #       -D CMAKE_SYSTEM_NAME=Windows                                   ^
+      #       -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}                   ^
+      #       -D CMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}"          ^
+      #       -D CMAKE_BUILD_TYPE="Release"                                  ^
+      #       -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded                    ^
+      #       -D BUILD_SHARED_LIBS=OFF                                       ^
+      #       -D LLVM_HOST_TRIPLE=${{ matrix.config.llvm_triple }}           ^
+      #       -D LLVM_DEFAULT_TARGET_TRIPLE=${{ matrix.config.llvm_triple }} ^
+      #       -D LLVM_TARGETS_TO_BUILD=${{ matrix.config.llvm_target }}      ^
+      #       -D LLVM_LINK_LLVM_DYLIB=OFF                                    ^
+      #       -D LLVM_BUILD_BENCHMARKS=OFF                                   ^
+      #       -D LLVM_BUILD_DOCS=OFF                                         ^
+      #       -D LLVM_BUILD_EXAMPLES=OFF                                     ^
+      #       -D LLVM_BUILD_LLVM_DYLIB=ON                                    ^
+      #       -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
+      #       -D LLVM_BUILD_TESTS=OFF                                        ^
+      #       -D LLVM_BUILD_UTILS=OFF                                        ^
+      #       -D LLVM_ENABLE_ASSERTIONS=OFF                                  ^
+      #       -D LLVM_ENABLE_BACKTRACES=OFF                                  ^
+      #       -D LLVM_ENABLE_BINDINGS=OFF                                    ^
+      #       -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                             ^
+      #       -D LLVM_ENABLE_DOXYGEN=OFF                                     ^
+      #       -D LLVM_ENABLE_IDE=OFF                                         ^
+      #       -D LLVM_ENABLE_LIBEDIT=OFF                                     ^
+      #       -D LLVM_ENABLE_LIBPFM=OFF                                      ^
+      #       -D LLVM_ENABLE_LIBXML2=OFF                                     ^
+      #       -D LLVM_ENABLE_PEDANTIC=OFF                                    ^
+      #       -D LLVM_ENABLE_PLUGINS=OFF                                     ^
+      #       -D LLVM_ENABLE_SPHINX=OFF                                      ^
+      #       -D LLVM_ENABLE_UNWIND_TABLES=OFF                               ^
+      #       -D LLVM_ENABLE_WARNINGS=OFF                                    ^
+      #       -D LLVM_ENABLE_WERROR=OFF                                      ^
+      #       -D LLVM_ENABLE_Z3_SOLVER=OFF                                   ^
+      #       -D LLVM_ENABLE_ZLIB=OFF                                        ^
+      #       -D LLVM_INCLUDE_BENCHMARKS=OFF                                 ^
+      #       -D LLVM_INCLUDE_DOCS=OFF                                       ^
+      #       -D LLVM_INCLUDE_EXAMPLES=OFF                                   ^
+      #       -D LLVM_INCLUDE_TESTS=OFF                                      ^
+      #       -D LLVM_INCLUDE_UTILS=OFF                                      ^
+      #       -D LLVM_OPTIMIZED_TABLEGEN=ON                                  ^
+      #       -D LLVM_DIR=C:\llvm-aarch64\lib\cmake\llvm                     ^
+      #       -D CMAKE_C_COMPILER=C:\llvm-aarch64\bin\clang-cl.exe           ^
+      #       -D CMAKE_CXX_COMPILER=C:\llvm-aarch64\bin\clang-cl.exe
 
-      - name: 🙏 [LLVM] Build
-        run: |
-          ninja -C ${{ env.LLVM_BUILD_DIR }}
-          ninja -C ${{ env.LLVM_BUILD_DIR }} install
+      # - name: 🙏 [LLVM] Build
+      #   run: |
+      #     ninja -C ${{ env.LLVM_BUILD_DIR }}
+      #     ninja -C ${{ env.LLVM_BUILD_DIR }} install
 
-      - name: 🛠️ [LLVM] Add to PATH
-        shell: pwsh
-        run: |
-          $env:PATH += ";${{ env.LLVM_INSTALL_DIR }};${{ env.LLVM_INSTALL_DIR }}\bin"
-          echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      # - name: 🛠️ [LLVM] Add to PATH
+      #   shell: pwsh
+      #   run: |
+      #     $env:PATH += ";${{ env.LLVM_INSTALL_DIR }};${{ env.LLVM_INSTALL_DIR }}\bin"
+      #     echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: ❔ CHECK important folders, to see if everything is present (after LLVM build)
-        run: |
-          llvm-config --targets-built
-          dir /S /B ${{ env.LLVM_INSTALL_DIR }}\bin
-          dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\cmake\llvm
-          dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\*.lib
-          dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\*AArch64*.lib
+      # - name: ❔ CHECK important folders, to see if everything is present (after LLVM build)
+      #   run: |
+      #     llvm-config --targets-built
+      #     dir /S /B ${{ env.LLVM_INSTALL_DIR }}\bin
+      #     dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\cmake\llvm
+      #     dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\*.lib
+      #     dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\*AArch64*.lib
 
-      - name: ❔ CHECK LLVM install (targets + libs)
-        run: |
-          where llvm-config
-          llvm-config --version
-          llvm-config --targets-built
-          llvm-config --components
-          echo "=== LLVM.dll ==="
-          dir %LLVM_INSTALL_DIR%\bin\LLVM.dll || exit /b 1
-          echo "=== AArch64 libs ==="
-          dir /S /B %LLVM_INSTALL_DIR%\lib\*AArch64*.lib || exit /b 1
-          echo "=== EXPORTS of LLVM.dll ==="
-          dumpbin /EXPORTS ${{ env.LLVM_INSTALL_DIR }}\bin\LLVM.dll | findstr AArch64
+      # - name: ❔ CHECK LLVM install (targets + libs)
+      #   run: |
+      #     where llvm-config
+      #     llvm-config --version
+      #     llvm-config --targets-built
+      #     llvm-config --components
+
+      # echo "=== LLVM.dll ==="
+      # dir %LLVM_INSTALL_DIR%\bin\LLVM.dll || exit /b 1
+      # echo "=== AArch64 libs ==="
+      # dir /S /B %LLVM_INSTALL_DIR%\lib\*AArch64*.lib || exit /b 1
+
+      #    echo "=== EXPORTS of LLVM.dll ==="
+      #    dumpbin /EXPORTS ${{ env.LLVM_INSTALL_DIR }}\bin\LLVM.dll | findstr AArch64
 
       # https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022
       #- name: 🛠️ Setup Visual Studio Developer Command Prompt
@@ -313,8 +316,9 @@ jobs:
             -D SWIFTSHADER_BUILD_BENCHMARKS=OFF                                 ^
             -D SWIFTSHADER_WARNINGS_AS_ERRORS=FALSE                             ^
             -D CMAKE_POLICY_VERSION_MINIMUM=3.5                                 ^
-            -D LLVM_DIR=${{ env.LLVM_INSTALL_DIR }}\lib\cmake\llvm
+            -D CMAKE_SHARED_LINKER_FLAGS="/LIBPATH:C:/llvm-aarch64/lib LLVMAArch64AsmParser.lib LLVMAArch64CodeGen.lib LLVMAArch64Desc.lib LLVMAArch64Info.lib LLVMAArch64Utils.lib LLVMCore.lib LLVMSupport.lib LLVMCodeGen.lib LLVMTarget.lib LLVMExecutionEngine.lib LLVMOrcJIT.lib"
 
+      # -D LLVM_DIR=${{ env.LLVM_INSTALL_DIR }}\lib\cmake\llvm              ^
       # -D CMAKE_C_COMPILER=${{ env.LLVM_INSTALL_DIR }}\bin\clang-cl.exe    ^
       # -D CMAKE_CXX_COMPILER=${{ env.LLVM_INSTALL_DIR }}\bin\clang-cl.exe
 
