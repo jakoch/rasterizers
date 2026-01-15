@@ -196,7 +196,6 @@ jobs:
             -D LLVM_HOST_TRIPLE=${{ matrix.config.llvm_triple }}           ^
             -D LLVM_DEFAULT_TARGET_TRIPLE=${{ matrix.config.llvm_triple }} ^
             -D LLVM_TARGETS_TO_BUILD=${{ matrix.config.llvm_target }}      ^
-            -D LLVM_ENABLE_PROJECTS="clang;lld"                            ^
             -D LLVM_LINK_LLVM_DYLIB=OFF                                    ^
             -D LLVM_BUILD_BENCHMARKS=OFF                                   ^
             -D LLVM_BUILD_DOCS=OFF                                         ^
