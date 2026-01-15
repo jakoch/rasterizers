@@ -193,13 +193,15 @@ jobs:
             -D CMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}"          ^
             -D CMAKE_BUILD_TYPE="Release"                                  ^
             -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded                    ^
-            -D BUILD_SHARED_LIBS=OFF                                       ^
             -D LLVM_HOST_TRIPLE=${{ matrix.config.llvm_triple }}           ^
             -D LLVM_DEFAULT_TARGET_TRIPLE=${{ matrix.config.llvm_triple }} ^
             -D LLVM_TARGETS_TO_BUILD=${{ matrix.config.llvm_target }}      ^
+            -D LLVM_ENABLE_PROJECTS="clang;lld"                            ^
+            -D LLVM_LINK_LLVM_DYLIB=OFF                                    ^
             -D LLVM_BUILD_BENCHMARKS=OFF                                   ^
             -D LLVM_BUILD_DOCS=OFF                                         ^
             -D LLVM_BUILD_EXAMPLES=OFF                                     ^
+            -D LLVM_BUILD_LLVM_DYLIB=ON                                    ^
             -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
             -D LLVM_BUILD_TESTS=OFF                                        ^
             -D LLVM_BUILD_UTILS=OFF                                        ^
@@ -243,8 +245,24 @@ jobs:
 
       - name: ❔ CHECK important folders, to see if everything is present (after LLVM build)
         run: |
+          llvm-config --targets-built
           dir /S /B ${{ env.LLVM_INSTALL_DIR }}\bin
           dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\cmake\llvm
+          dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\*.lib
+          dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\*AArch64*.lib
+
+      - name: ❔ CHECK LLVM install (targets + libs)
+        run: |
+          where llvm-config
+          llvm-config --version
+          llvm-config --targets-built
+          llvm-config --components
+          echo "=== LLVM.dll ==="
+          dir %LLVM_INSTALL_DIR%\bin\LLVM.dll || exit /b 1
+          echo "=== AArch64 libs ==="
+          dir /S /B %LLVM_INSTALL_DIR%\lib\*AArch64*.lib || exit /b 1
+          echo "=== EXPORTS of LLVM.dll ==="
+          dumpbin /EXPORTS ${{ env.LLVM_INSTALL_DIR }}\bin\LLVM.dll | findstr AArch64
 
       # https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022
       #- name: 🛠️ Setup Visual Studio Developer Command Prompt
