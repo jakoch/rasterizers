@@ -251,12 +251,16 @@ jobs:
       #     dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\*.lib
       #     dir /S /B ${{ env.LLVM_INSTALL_DIR }}\lib\*AArch64*.lib
 
-      # - name: ❔ CHECK LLVM install (targets + libs)
-      #   run: |
-      #     where llvm-config
-      #     llvm-config --version
-      #     llvm-config --targets-built
-      #     llvm-config --components
+      - name: ❔ CHECK LLVM install (targets + libs)
+        run: |
+          echo "=== LLVM Config ==="
+          where llvm-config
+          echo "=== LLVM Version ==="
+          llvm-config --version
+          echo "=== LLVM Targets Built ==="
+          llvm-config --targets-built
+          echo "=== LLVM Components ==="
+          llvm-config --components
 
       # echo "=== LLVM.dll ==="
       # dir %LLVM_INSTALL_DIR%\bin\LLVM.dll || exit /b 1
@@ -311,12 +315,13 @@ jobs:
             -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}                        ^
             -D CMAKE_BUILD_TYPE=Release                                         ^
             -D REACTOR_BACKEND="${{ matrix.config.reactor_backend }}"           ^
+            -D REACTOR_DEFAULT_OPT_LEVEL=Default                                ^
             -D SWIFTSHADER_BUILD_PVR=OFF                                        ^
             -D SWIFTSHADER_BUILD_TESTS=OFF                                      ^
             -D SWIFTSHADER_BUILD_BENCHMARKS=OFF                                 ^
             -D SWIFTSHADER_WARNINGS_AS_ERRORS=FALSE                             ^
             -D CMAKE_POLICY_VERSION_MINIMUM=3.5                                 ^
-            -D CMAKE_SHARED_LINKER_FLAGS="/LIBPATH:C:/PROGRA~1/LLVM/lib LLVMAArch64AsmParser.lib LLVMAArch64CodeGen.lib LLVMAArch64Desc.lib LLVMAArch64Info.lib LLVMAArch64Utils.lib LLVMCore.lib LLVMSupport.lib LLVMCodeGen.lib LLVMTarget.lib LLVMExecutionEngine.lib LLVMOrcJIT.lib"
+            -D CMAKE_SHARED_LINKER_FLAGS="/LIBPATH:C:/PROGRA~1/LLVM/lib LLVMAArch64AsmParser.lib LLVMAArch64CodeGen.lib LLVMAArch64Desc.lib LLVMAArch64Info.lib LLVMAArch64Utils.lib"
 
       # -D LLVM_DIR=${{ env.LLVM_INSTALL_DIR }}\lib\cmake\llvm              ^
       # -D CMAKE_C_COMPILER=${{ env.LLVM_INSTALL_DIR }}\bin\clang-cl.exe    ^

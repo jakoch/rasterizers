@@ -48,6 +48,7 @@ jobs:
     # https://github.com/actions/runner-images
     # Installed Software:
     # - https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
+    # - https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-VS2026-Readme.md
     # - https://github.com/actions/partner-runner-images/blob/main/images/arm-windows-11-image.md
     runs-on: ${{ matrix.config.os }}
 
@@ -81,23 +82,23 @@ jobs:
     # DX-Headers: https://github.com/microsoft/DirectX-Headers/releases
     # GLSLang:    https://github.com/KhronosGroup/glslang/releases
     env:
-      MESA_VERSION_TAG:   'mesa-25.3.3'
+      MESA_VERSION_TAG:   'mesa-26.1.4'
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
       MESA_INSTALL_DIR_LAVAPIPE: ${{github.workspace}}\mesa\install\lavapipe-${{ matrix.config.artifact_arch }}
       MESA_INSTALL_DIR_LLVMPIPE: ${{github.workspace}}\mesa\install\llvmpipe-${{ matrix.config.artifact_arch }}
       MESA_INSTALL_DIR_D3D12: ${{github.workspace}}\mesa\install\d3d12-${{ matrix.config.artifact_arch }}
-      LLVM_VERSION:       '21.1.8'
+      LLVM_VERSION:       '22.1.8'
       LLVM_PROJECT_DIR:   ${{github.workspace}}\llvm-project
       LLVM_CMAKE_DIR:     ${{github.workspace}}\llvm-project\cmake
       LLVM_SOURCE_DIR:    ${{github.workspace}}\llvm-project\llvm
       LLVM_BUILD_DIR:     ${{github.workspace}}\llvm-project\llvm\build
       LLVM_INSTALL_DIR:   ${{github.workspace}}\llvm-project\llvm\install
       LLVM_DEPS_DIR:      ${{github.workspace}}\llvm-project\third-party
-      DIRECTX_TAG:        'v1.618.2'
+      DIRECTX_TAG:        'v1.619.4'
       DIRECTX_SDK_DIR:    ${{github.workspace}}\directx
-      GLSLANG_TAG:        '16.1.0'
+      GLSLANG_TAG:        '16.3.0'
       GLSLANG_DIR:        ${{github.workspace}}\glslang
 
     defaults:
@@ -124,6 +125,11 @@ jobs:
     # - msvc VC17
 
     steps:
+      - name: Runner OS
+        run: |
+          echo "We are running on ${{ runner.os }} with arch ${{ runner.arch }}."
+          node -e "console.log(require('os').platform() + '-' + require('os').arch())"
+
       - name: 🤘 Checkout Code
         uses: actions/checkout@v6 # https://github.com/actions/checkout
 
@@ -227,6 +233,7 @@ jobs:
             -D LLVM_BUILD_DOCS=OFF                                         ^
             -D LLVM_BUILD_EXAMPLES=OFF                                     ^
             -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
+            -D LLVM_LINK_LLVM_DYLIB=OFF                                    ^
             -D LLVM_BUILD_TESTS=OFF                                        ^
             -D LLVM_BUILD_UTILS=OFF                                        ^
             -D LLVM_ENABLE_ASSERTIONS=OFF                                  ^
