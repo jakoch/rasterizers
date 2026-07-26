@@ -131,14 +131,14 @@ jobs:
           node -e "console.log(require('os').platform() + '-' + require('os').arch())"
 
       - name: 🤘 Checkout Code
-        uses: actions/checkout@v6 # https://github.com/actions/checkout
+        uses: actions/checkout@v7 # https://github.com/actions/checkout
 
       - name: 🤘 Checkout Code - https://gitlab.freedesktop.org/mesa/mesa
         run: |
           git clone --depth=1 --no-tags --single-branch --branch ${{ env.MESA_VERSION_TAG }} https://gitlab.freedesktop.org/mesa/mesa.git mesa
 
       - name: 🛠️ Setup Visual Studio Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1 # https://github.com/ilammy/msvc-dev-cmd
+        uses: TheMrMilchmann/setup-msvc-dev@v4 # https://github.com/TheMrMilchmann/setup-msvc-dev
         with:
           # amd64 (x64, default) or amd64_arm64
           arch: ${{ matrix.config.msvc_arch }}
@@ -522,7 +522,7 @@ jobs:
           retention-days: 3
 
       - name: 📦 🚀 Upload Artifact - LLVMPipe
-        uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
+        uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
         with:
           name: ${{ env.MESA_LLVMPIPE_ARTIFACT_NAME }}
           path: ${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}
@@ -530,7 +530,7 @@ jobs:
           retention-days: 3
 
       - name: 📦 🚀 Upload Artifact - Microsoft-Experimental (dzn)
-        uses: actions/upload-artifact@v4 #
+        uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
         with:
           name: ${{ env.MESA_DZN_ARTIFACT_NAME }}
           path: ${{ env.MESA_DZN_ARTIFACT_ZIPFILE }}
@@ -538,7 +538,7 @@ jobs:
           retention-days: 3
 
       - name: 📦 🚀 Upload Artifact - D3D12
-        uses: actions/upload-artifact@v4 #
+        uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
         with:
           name: ${{ env.MESA_D3D12_ARTIFACT_NAME }}
           path: ${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}

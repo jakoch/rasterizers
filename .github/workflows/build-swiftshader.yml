@@ -101,16 +101,16 @@ jobs:
 
       # A checkout of this repo is required to push artifacts to GitHub Releases.
       - name: 🤘 Checkout Code - jakoch/rasterizers
-        uses: actions/checkout@v6 # https://github.com/actions/checkout
+        uses: actions/checkout@v7 # https://github.com/actions/checkout
 
       - name: 🤘 Checkout Code - google/swiftshader
-        uses: actions/checkout@v6 # https://github.com/actions/checkout
+        uses: actions/checkout@v7 # https://github.com/actions/checkout
         with:
           repository: google/swiftshader
           path: swiftshader
 
       - name: 🛠️ Setup Visual Studio Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1 # https://github.com/ilammy/msvc-dev-cmd
+        uses: TheMrMilchmann/setup-msvc-dev@v4 # https://github.com/TheMrMilchmann/setup-msvc-dev
         with:
           # amd64 (x64, default) or amd64_arm64
           arch: ${{ matrix.config.msvc_arch }}
@@ -375,7 +375,7 @@ jobs:
           7z a -tzip -mx9 "${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}" "${{ env.SWIFTSHADER_BUILD_DIR }}\Windows\*"
 
       - name: 📦 🚀 Upload Artifact
-        uses: actions/upload-artifact@v6 # https://github.com/actions/upload-artifact
+        uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
         with:
           name: ${{ env.SWIFTSHADER_ARTIFACT_NAME }}
           path: ${{ env.SWIFTSHADER_ARTIFACT_ZIPFILE }}
