@@ -232,10 +232,10 @@ jobs:
             -D LLVM_BUILD_BENCHMARKS=OFF                                   ^
             -D LLVM_BUILD_DOCS=OFF                                         ^
             -D LLVM_BUILD_EXAMPLES=OFF                                     ^
-            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
-            -D LLVM_LINK_LLVM_DYLIB=OFF                                    ^
             -D LLVM_BUILD_TESTS=OFF                                        ^
             -D LLVM_BUILD_UTILS=OFF                                        ^
+            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
+            -D LLVM_LINK_LLVM_DYLIB=OFF                                    ^
             -D LLVM_ENABLE_ASSERTIONS=OFF                                  ^
             -D LLVM_ENABLE_BACKTRACES=OFF                                  ^
             -D LLVM_ENABLE_BINDINGS=OFF                                    ^
