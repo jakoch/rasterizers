@@ -82,7 +82,7 @@ jobs:
     # DX-Headers: https://github.com/microsoft/DirectX-Headers/releases
     # GLSLang:    https://github.com/KhronosGroup/glslang/releases
     env:
-      MESA_VERSION_TAG:   'mesa-26.1.4'
+      MESA_VERSION_TAG:   'mesa-26.1.5'
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
@@ -175,11 +175,8 @@ jobs:
         working-directory: ${{ env.LLVM_PROJECT_DIR }}
         run: |
           curl -sfL -o llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -txz llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -ttar llvm-project-${{ env.LLVM_VERSION }}.src.tar
+          tar -xJf llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz --strip-components=1
           del llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz
-          del llvm-project-${{ env.LLVM_VERSION }}.src.tar
-          mv llvm-project-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_SOURCE_DIR }}
 
       # in-source build, dir: llvm-project/llvm/build
       - name: 🛠️ [LLVM] Make build folder
