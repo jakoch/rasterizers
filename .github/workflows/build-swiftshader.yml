@@ -314,6 +314,7 @@ jobs:
             -D CMAKE_SYSTEM_NAME=Windows                                        ^
             -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}                        ^
             -D CMAKE_BUILD_TYPE=Release                                         ^
+            -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded                         ^
             -D REACTOR_BACKEND="${{ matrix.config.reactor_backend }}"           ^
             -D REACTOR_DEFAULT_OPT_LEVEL=Default                                ^
             -D SWIFTSHADER_BUILD_PVR=OFF                                        ^
