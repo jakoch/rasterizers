@@ -11,16 +11,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - "It was a bright day in April, and the clocks were striking thirteen." - 1984
 
+## [1.2.0] - 2026-07-29
+
+### Added
+- added arm64 builds for Lavapipe, LLVMPipe, D3D12, DZN, [Issue 4](https://github.com/jakoch/rasterizers/issues/4)
+
+### Changed
+
+- updated build-mesa.yml to use:
+  - Mesa v26.1.5
+  - LLVM 22.1.8
+  - DX 1.619.4
+  - GLSLANG 16.3.0
+
 ## [1.1.0] - 2026-01-10
 
 ### Changed
+
 - updated build-mesa.yml to use:
   - Mesa v25.3.3
   - LLVM 21.1.8
   - DX 1.618.2
   - GLSLANG 16.1.0
 - build and release Lavapipe (Vulkan) and LLVMPipe (OpenGL) artifacts
-
 
 ## [1.0.0] - 2024-07-xx
 
