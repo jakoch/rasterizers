@@ -65,7 +65,6 @@ jobs:
             msvc_arch: "amd64",
             llvm_target: "X86",
             llvm_triple: "x86_64-pc-windows-msvc",
-            cmake_generator: "x64",
             artifact_arch: "x64"
           }
         - {
@@ -73,7 +72,6 @@ jobs:
             msvc_arch: "amd64_arm64",
             llvm_target: "AArch64",
             llvm_triple: "aarch64-pc-windows-msvc",
-            cmake_generator: "ARM64",
             artifact_arch: "arm64"
           }
 
@@ -305,8 +303,8 @@ jobs:
           git clone --depth=1 --no-tags --single-branch --branch ${{ env.GLSLANG_TAG }} https://github.com/KhronosGroup/glslang
           cd glslang
           python update_glslang_sources.py
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX="${{ env.GLSLANG_DIR }}"
-          cmake --build build --config Release --target install
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.GLSLANG_DIR }}"
+          cmake --build build --target install
           cmake --install build
 
       # the f**k is this? glslangValidator is not in the PATH, not even built.
