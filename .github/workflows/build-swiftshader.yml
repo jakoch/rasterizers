@@ -73,7 +73,7 @@ jobs:
             msvc_arch: "amd64_arm64",
             cmake_generator: "ARM64",
             artifact_arch: "arm64",
-            reactor_backend: "LLVM",
+            reactor_backend: "Subzero",
             llvm_target: "AArch64",
             llvm_triple: "aarch64-pc-windows-msvc"
           }
@@ -321,8 +321,7 @@ jobs:
             -D SWIFTSHADER_BUILD_TESTS=OFF                                      ^
             -D SWIFTSHADER_BUILD_BENCHMARKS=OFF                                 ^
             -D SWIFTSHADER_WARNINGS_AS_ERRORS=FALSE                             ^
-            -D CMAKE_POLICY_VERSION_MINIMUM=3.5                                 ^
-            -D CMAKE_SHARED_LINKER_FLAGS="/LIBPATH:C:/PROGRA~1/LLVM/lib LLVMAArch64AsmParser.lib LLVMAArch64CodeGen.lib LLVMAArch64Desc.lib LLVMAArch64Info.lib LLVMAArch64Utils.lib"
+            -D CMAKE_POLICY_VERSION_MINIMUM=3.5
 
       # -D LLVM_DIR=${{ env.LLVM_INSTALL_DIR }}\lib\cmake\llvm              ^
       # -D CMAKE_C_COMPILER=${{ env.LLVM_INSTALL_DIR }}\bin\clang-cl.exe    ^
