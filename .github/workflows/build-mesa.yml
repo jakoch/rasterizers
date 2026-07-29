@@ -352,6 +352,8 @@ jobs:
           -D egl=enabled                                                      ^
           -D gles1=enabled                                                    ^
           -D gles2=enabled                                                    ^
+          -D c_args="-wd4189 -wd4319"                                          ^
+          -D cpp_args="-wd4189 -wd4319"                                        ^
           -D build-tests=false
 
       - name: 🙏 [MESA] Build + Install
@@ -411,6 +413,8 @@ jobs:
           -D egl=enabled                                                      ^
           -D gles1=enabled                                                    ^
           -D gles2=enabled                                                    ^
+          -D c_args="-wd4189 -wd4319"                                          ^
+          -D cpp_args="-wd4189 -wd4319"                                        ^
           -D build-tests=false
 
       - name: 🙏 [MESA] Build + Install
