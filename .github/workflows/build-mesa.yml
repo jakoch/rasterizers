@@ -150,7 +150,7 @@ jobs:
       # Reminder: This step requires that the CMakePresets for CI contain
       # "CMAKE_CXX_COMPILER_LAUNCHER": "sccache".
       - name: 🎯 Setup Build Cache
-        uses: hendrikmuhs/ccache-action@v1.2 # https://github.com/hendrikmuhs/ccache-action
+        uses: hendrikmuhs/ccache-action@v1.2.23 # https://github.com/hendrikmuhs/ccache-action
         with:
           variant: sccache
           key: mesa-build-${{ runner.os }}-${{ github.ref }}
@@ -493,7 +493,7 @@ jobs:
           7z a -tzip -mx9 "${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_D3D12 }}\*"
 
       - name: 📦 🚀 Upload Artifact - LavaPipe
-        uses: actions/upload-artifact@v6 # https://github.com/actions/upload-artifact
+        uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
         with:
           name: ${{ env.MESA_LAVAPIPE_ARTIFACT_NAME }}
           path: ${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}
