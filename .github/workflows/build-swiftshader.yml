@@ -282,6 +282,15 @@ jobs:
         if: ${{ matrix.config.os == 'windows-2025' }}
         run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
 
+      # Patch SwiftShader's bundled llvm-subzero for ARM64 Windows compatibility.
+      # The CONTEXT struct on ARM64 uses Pc/Sp/Fp instead of x86's Eip/Esp/Ebp.
+      - name: 🔧 Patch llvm-subzero for ARM64
+        if: ${{ matrix.config.os == 'windows-11-arm' }}
+        shell: pwsh
+        run: |
+          $file = "${{github.workspace}}\swiftshader\third_party\llvm-subzero\lib\Support\Windows\Signals.inc"
+          (Get-Content $file) -replace 'context\.Eip', 'context.Pc' -replace 'context\.Esp', 'context.Sp' -replace 'context\.Ebp', 'context.Fp' | Set-Content $file
+
       # Reminder: This step requires that the CMakePresets for CI contain
       # "CMAKE_CXX_COMPILER_LAUNCHER": "sccache".
       - name: 🎯 Setup Build Cache
