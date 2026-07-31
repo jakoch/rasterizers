@@ -119,6 +119,8 @@ curl -sLO "$llvmpipe_latest_version"
 - Main Repository: https://gitlab.freedesktop.org/mesa/mesa/
 - Demos: https://gitlab.freedesktop.org/mesa/demos
 
+- **MesaMatrix**: https://mesamatrix.net/
+
 ### Swiftshader
 
 - Main Repository: https://swiftshader.googlesource.com/SwiftShader

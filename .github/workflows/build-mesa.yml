@@ -43,33 +43,61 @@ jobs:
 
 # ---------------------------------------------------------------------------------------
 
-    name: "Windows VC17"
+    name: "Windows VC18"
 
     # https://github.com/actions/runner-images
-    # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
-    runs-on: windows-2025
+    # Installed Software:
+    # - https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
+    # - https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-VS2026-Readme.md
+    # - https://github.com/actions/partner-runner-images/blob/main/images/arm-windows-11-image.md
+    runs-on: ${{ matrix.config.os }}
+
+    # Do not run the workflow if the actor is dependabot or if the PR is from a fork.
+    if: ${{ ! (startsWith(github.actor, 'dependabot') || github.event.pull_request.head.repo.fork ) }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        # What a shitshow..
+        - {
+            os: "windows-2025",
+            msvc_arch: "amd64",
+            llvm_target: "X86",
+            llvm_triple: "x86_64-pc-windows-msvc",
+            artifact_arch: "x64"
+          }
+        - {
+            os: "windows-11-arm",
+            msvc_arch: "amd64_arm64",
+            llvm_target: "AArch64",
+            llvm_triple: "aarch64-pc-windows-msvc",
+            artifact_arch: "arm64"
+          }
 
     # LLVM:       https://github.com/llvm/llvm-project/releases
     # MESA:       https://docs.mesa3d.org/relnotes.html
     # DX-Headers: https://github.com/microsoft/DirectX-Headers/releases
     # GLSLang:    https://github.com/KhronosGroup/glslang/releases
     env:
-      MESA_VERSION_TAG:   'mesa-25.2.5'
+      MESA_VERSION_TAG:   'mesa-26.1.5'
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
-      LLVM_VERSION:       '21.1.4'
+      MESA_INSTALL_DIR_LAVAPIPE: ${{github.workspace}}\mesa\install\lavapipe-${{ matrix.config.artifact_arch }}
+      MESA_INSTALL_DIR_LLVMPIPE: ${{github.workspace}}\mesa\install\llvmpipe-${{ matrix.config.artifact_arch }}
+      MESA_INSTALL_DIR_D3D12: ${{github.workspace}}\mesa\install\d3d12-${{ matrix.config.artifact_arch }}
+      LLVM_VERSION:       '22.1.8'
       LLVM_PROJECT_DIR:   ${{github.workspace}}\llvm-project
       LLVM_CMAKE_DIR:     ${{github.workspace}}\llvm-project\cmake
       LLVM_SOURCE_DIR:    ${{github.workspace}}\llvm-project\llvm
       LLVM_BUILD_DIR:     ${{github.workspace}}\llvm-project\llvm\build
       LLVM_INSTALL_DIR:   ${{github.workspace}}\llvm-project\llvm\install
       LLVM_DEPS_DIR:      ${{github.workspace}}\llvm-project\third-party
-      DIRECTX_TAG:        'v1.618.2'
+      DIRECTX_TAG:        'v1.619.4'
       DIRECTX_SDK_DIR:    ${{github.workspace}}\directx
-      GLSLANG_TAG:        '16.0.0'
+      GLSLANG_TAG:        '16.3.0'
       GLSLANG_DIR:        ${{github.workspace}}\glslang
-
 
     defaults:
       run:
@@ -92,33 +120,50 @@ jobs:
     # - cmake
     # - python, pip
     # - rustc
-    # - msvc VC17
+    # - msvc VC18
 
     steps:
+      - name: Runner OS
+        run: |
+          echo "We are running on ${{ runner.os }} with arch ${{ runner.arch }}."
+          node -e "console.log(require('os').platform() + '-' + require('os').arch())"
+
       - name: 🤘 Checkout Code
-        uses: actions/checkout@v6 # https://github.com/actions/checkout
+        uses: actions/checkout@v7 # https://github.com/actions/checkout
 
       - name: 🤘 Checkout Code - https://gitlab.freedesktop.org/mesa/mesa
         run: |
           git clone --depth=1 --no-tags --single-branch --branch ${{ env.MESA_VERSION_TAG }} https://gitlab.freedesktop.org/mesa/mesa.git mesa
 
       - name: 🛠️ Setup Visual Studio Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1 # https://github.com/ilammy/msvc-dev-cmd
+        uses: TheMrMilchmann/setup-msvc-dev@v4 # https://github.com/TheMrMilchmann/setup-msvc-dev
+        with:
+          # amd64 (x64, default) or amd64_arm64
+          arch: ${{ matrix.config.msvc_arch }}
 
+      # Commented out, because a windows-11-arm choco is unable to install a windows-11-arm cmake.
+      # Thanks for nothing. Let's use the pre-installed cmake...
       # https://community.chocolatey.org/packages/cmake
-      - name: 🔽 Install CMake
-        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+      #- name: 🔽 Install CMake
+      #  run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
 
       # Reminder: This step requires that the CMakePresets for CI contain
       # "CMAKE_CXX_COMPILER_LAUNCHER": "sccache".
       - name: 🎯 Setup Build Cache
-        uses: hendrikmuhs/ccache-action@v1 # https://github.com/hendrikmuhs/ccache-action
+        uses: hendrikmuhs/ccache-action@v1.2.23 # https://github.com/hendrikmuhs/ccache-action
         with:
           variant: sccache
-          key: mesa-build-${{ github.ref }}
+          key: mesa-build-${{ runner.os }}-${{ github.ref }}
           restore-keys: |
-            mesa-build-${{ github.ref }}
-            mesa-build-
+            mesa-build-${{ runner.os }}-${{ github.ref }}
+            mesa-build-${{ runner.os }}
+
+      #- name: 🎯 [CACHE] Restore LLVM build cache
+      #  id: restore-llvm-cache
+      #  uses: actions/cache/restore@v4
+      #  with:
+      #    path: ${{ env.LLVM_BUILD_DIR }}
+      #    key: cache-${{ runner.os }}-llvm-${{ env.LLVM_VERSION }}-${{ hashFiles('llvm-project/llvm/**/CMakeLists.txt') }}
 
       - name: 🛠️ [LLVM] Make project folder
         run: |
@@ -127,32 +172,9 @@ jobs:
       - name: 🔽 [LLVM] Install LLVM into llvm-project folder
         working-directory: ${{ env.LLVM_PROJECT_DIR }}
         run: |
-          curl -sfL -o llvm-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/llvm-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -txz llvm-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -ttar llvm-${{ env.LLVM_VERSION }}.src.tar
-          del llvm-${{ env.LLVM_VERSION }}.src.tar.xz
-          del llvm-${{ env.LLVM_VERSION }}.src.tar
-          mv llvm-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_SOURCE_DIR }}
-
-      - name: 🔽 [LLVM] Install CMAKE modules into llvm-project folder
-        working-directory: ${{ env.LLVM_PROJECT_DIR }}
-        run: |
-          curl -sfL -o cmake-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/cmake-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -txz cmake-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -ttar cmake-${{ env.LLVM_VERSION }}.src.tar
-          del cmake-${{ env.LLVM_VERSION }}.src.tar.xz
-          del cmake-${{ env.LLVM_VERSION }}.src.tar
-          mv cmake-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_CMAKE_DIR }}
-
-      - name: 🔽 [LLVM] Install Third-Party into llvm-project folder
-        working-directory: ${{ env.LLVM_PROJECT_DIR }}
-        run: |
-          curl -sfL -o third-party-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/third-party-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -txz third-party-${{ env.LLVM_VERSION }}.src.tar.xz
-          7z x -bb0 -ttar third-party-${{ env.LLVM_VERSION }}.src.tar
-          del third-party-${{ env.LLVM_VERSION }}.src.tar.xz
-          del third-party-${{ env.LLVM_VERSION }}.src.tar
-          mv third-party-${{ env.LLVM_VERSION }}.src ${{ env.LLVM_DEPS_DIR }}
+          curl -sfL -o llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz
+          tar -xJf llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz --strip-components=1
+          del llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz
 
       # in-source build, dir: llvm-project/llvm/build
       - name: 🛠️ [LLVM] Make build folder
@@ -168,54 +190,63 @@ jobs:
       - name: 🖋️ [LLVM] Configure
         working-directory: ${{ env.LLVM_BUILD_DIR }}
         run: |
-          cmake                                                   ^
-            -B ${{ env.LLVM_BUILD_DIR }}                          ^
-            -S ${{ env.LLVM_SOURCE_DIR }}                         ^
-            -G Ninja                                              ^
-            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache                ^
-            -D CMAKE_SYSTEM_NAME=Windows                          ^
-            -D CMAKE_SYSTEM_PROCESSOR=x86_64                      ^
-            -D CMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}" ^
-            -D CMAKE_BUILD_TYPE="Release"                         ^
-            -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded           ^
-            -D BUILD_SHARED_LIBS=OFF                              ^
-            -D LLVM_HOST_TRIPLE="x86_64-windows-msvc"             ^
-            -D LLVM_DEFAULT_TARGET_TRIPLE="x86_64-windows-msvc"   ^
-            -D LLVM_TARGETS_TO_BUILD="X86"                        ^
-            -D LLVM_ENABLE_BACKTRACES=OFF                         ^
-            -D LLVM_ENABLE_UNWIND_TABLES=OFF                      ^
-            -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                    ^
-            -D LLVM_ENABLE_LIBXML2=OFF                            ^
-            -D LLVM_ENABLE_LIBEDIT=OFF                            ^
-            -D LLVM_ENABLE_LIBPFM=OFF                             ^
-            -D LLVM_ENABLE_ZLIB=OFF                               ^
-            -D LLVM_ENABLE_Z3_SOLVER=OFF                          ^
-            -D LLVM_ENABLE_WARNINGS=OFF                           ^
-            -D LLVM_ENABLE_PEDANTIC=OFF                           ^
-            -D LLVM_ENABLE_WERROR=OFF                             ^
-            -D LLVM_ENABLE_SPHINX=OFF                             ^
-            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                        ^
-            -D LLVM_BUILD_UTILS=OFF                               ^
-            -D LLVM_BUILD_TESTS=OFF                               ^
-            -D LLVM_BUILD_DOCS=OFF                                ^
-            -D LLVM_BUILD_EXAMPLES=OFF                            ^
-            -D LLVM_BUILD_BENCHMARKS=OFF                          ^
-            -D LLVM_INCLUDE_UTILS=OFF                             ^
-            -D LLVM_INCLUDE_TESTS=OFF                             ^
-            -D LLVM_INCLUDE_DOCS=OFF                              ^
-            -D LLVM_INCLUDE_EXAMPLES=OFF                          ^
-            -D LLVM_INCLUDE_BENCHMARKS=OFF                        ^
-            -D LLVM_ENABLE_BINDINGS=OFF                           ^
-            -D LLVM_OPTIMIZED_TABLEGEN=ON                         ^
-            -D LLVM_ENABLE_PLUGINS=OFF                            ^
-            -D LLVM_ENABLE_IDE=OFF                                ^
-            -D LLVM_ENABLE_ASSERTIONS=OFF                         ^
-            -D LLVM_ENABLE_DOXYGEN=OFF
+          cmake                                                            ^
+            -B ${{ env.LLVM_BUILD_DIR }}                                   ^
+            -S ${{ env.LLVM_SOURCE_DIR }}                                  ^
+            -G Ninja                                                       ^
+            -D CMAKE_CXX_COMPILER_LAUNCHER=sccache                         ^
+            -D CMAKE_SYSTEM_NAME=Windows                                   ^
+            -D CMAKE_SYSTEM_PROCESSOR=${{ runner.arch }}                   ^
+            -D CMAKE_INSTALL_PREFIX="${{ env.LLVM_INSTALL_DIR }}"          ^
+            -D CMAKE_BUILD_TYPE="Release"                                  ^
+            -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded                    ^
+            -D BUILD_SHARED_LIBS=OFF                                       ^
+            -D LLVM_HOST_TRIPLE=${{ matrix.config.llvm_triple }}           ^
+            -D LLVM_DEFAULT_TARGET_TRIPLE=${{ matrix.config.llvm_triple }} ^
+            -D LLVM_TARGETS_TO_BUILD=${{ matrix.config.llvm_target }}      ^
+            -D LLVM_BUILD_BENCHMARKS=OFF                                   ^
+            -D LLVM_BUILD_DOCS=OFF                                         ^
+            -D LLVM_BUILD_EXAMPLES=OFF                                     ^
+            -D LLVM_BUILD_TESTS=OFF                                        ^
+            -D LLVM_BUILD_UTILS=OFF                                        ^
+            -D LLVM_BUILD_LLVM_C_DYLIB=OFF                                 ^
+            -D LLVM_LINK_LLVM_DYLIB=OFF                                    ^
+            -D LLVM_ENABLE_ASSERTIONS=OFF                                  ^
+            -D LLVM_ENABLE_BACKTRACES=OFF                                  ^
+            -D LLVM_ENABLE_BINDINGS=OFF                                    ^
+            -D LLVM_ENABLE_CRASH_OVERRIDES=OFF                             ^
+            -D LLVM_ENABLE_DOXYGEN=OFF                                     ^
+            -D LLVM_ENABLE_IDE=OFF                                         ^
+            -D LLVM_ENABLE_LIBEDIT=OFF                                     ^
+            -D LLVM_ENABLE_LIBPFM=OFF                                      ^
+            -D LLVM_ENABLE_LIBXML2=OFF                                     ^
+            -D LLVM_ENABLE_PEDANTIC=OFF                                    ^
+            -D LLVM_ENABLE_PLUGINS=OFF                                     ^
+            -D LLVM_ENABLE_SPHINX=OFF                                      ^
+            -D LLVM_ENABLE_UNWIND_TABLES=OFF                               ^
+            -D LLVM_ENABLE_WARNINGS=OFF                                    ^
+            -D LLVM_ENABLE_WERROR=OFF                                      ^
+            -D LLVM_ENABLE_Z3_SOLVER=OFF                                   ^
+            -D LLVM_ENABLE_ZLIB=OFF                                        ^
+            -D LLVM_INCLUDE_BENCHMARKS=OFF                                 ^
+            -D LLVM_INCLUDE_DOCS=OFF                                       ^
+            -D LLVM_INCLUDE_EXAMPLES=OFF                                   ^
+            -D LLVM_INCLUDE_TESTS=OFF                                      ^
+            -D LLVM_INCLUDE_UTILS=OFF                                      ^
+            -D LLVM_OPTIMIZED_TABLEGEN=ON
 
       - name: 🙏 [LLVM] Build
         run: |
           ninja -C ${{ env.LLVM_BUILD_DIR }}
           ninja -C ${{ env.LLVM_BUILD_DIR }} install
+
+      #- name: 🎯 [CACHE] Save LLVM build cache
+      #  uses: actions/cache@v4
+      #  id: save-llvm-cache
+      #  if: always() && steps.restore-llvm-cache.outputs.cache-hit != 'true'
+      #  with:
+      #    path: ${{ env.LLVM_BUILD_DIR }}
+      #    key: cache-${{ runner.os }}-llvm-${{ env.LLVM_VERSION }}-${{ hashFiles('llvm-project/llvm/**/CMakeLists.txt') }}
 
       - name: 🛠️ [LLVM] Add to PATH
         shell: pwsh
@@ -227,9 +258,11 @@ jobs:
       # https://community.chocolatey.org/packages/winflexbison
       # https://community.chocolatey.org/packages/winflexbison3 ???
       # https://community.chocolatey.org/packages/meson
-      - name: 🔽 Install Meson
+      # https://community.chocolatey.org/packages/Lua lua53, lua54 not even on choco
+      # https://community.chocolatey.org/packages/libpng is required for "screenshot" in lavapipe
+      - name: 🔽 Install Tools - Meson, Winflexbison, PkgConfigLite
         run: |
-          choco install meson winflexbison pkgconfiglite
+          choco install meson winflexbison3 pkgconfiglite lua libpng
           refreshenv
 
       - name: 🛠️ [MESON] Add to PATH
@@ -264,14 +297,14 @@ jobs:
         run: |
           pip install packaging mako PyYAML
 
-      # update_glslang_sources fetches the dependencies: goggletest, SPIRV-Tools, SPIRV-Headers
+      # update_glslang_sources fetches the dependencies: googletest, SPIRV-Tools, SPIRV-Headers
       - name: 🔽 [GLSLANG] Build + Install glslang
         run: |
           git clone --depth=1 --no-tags --single-branch --branch ${{ env.GLSLANG_TAG }} https://github.com/KhronosGroup/glslang
           cd glslang
           python update_glslang_sources.py
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX="${{ env.GLSLANG_DIR }}"
-          cmake --build build --config Release --target install
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.GLSLANG_DIR }}"
+          cmake --build build --target install
           cmake --install build
 
       # the f**k is this? glslangValidator is not in the PATH, not even built.
@@ -288,31 +321,39 @@ jobs:
       #
       # https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/meson.options
       #
+      # Lavapipe is vulkan_drivers=swrast
+      # LLVMPipe is gallium_drivers=llvmpipe
       #
-      # -Dvulkan-drivers="swrast,amd,microsoft-experimental"
-      # -Dgallium-drivers="swrast,d3d12,zink" deprecated with v25
-      # -D gallium-drivers=softpipe,llvmpipe
+      # -D vulkan-drivers="swrast,amd,microsoft-experimental"
+      # -D gallium-drivers="swrast,d3d12,zink" deprecated with v25
+      # -D gallium-drivers="softpipe,llvmpipe"
       #
-      - name: 🖋️ [MESA] Setup (softpipe llvmpipe)
+      - name: 🖋️ [MESA] Setup (llvmpipe, lavapipe)
         env:
           CC:  "sccache cl"
           CXX: "sccache cl"
           CPPFLAGS: "-I${{ env.DIRECTX_SDK_DIR }}/include -I${{ env.GLSLANG_DIR }}/include"
           LDFLAGS:  "-L${{ env.DIRECTX_SDK_DIR }}/lib -L${{ env.GLSLANG_DIR }}/lib"
         run: |
-          meson setup                                            ^
-          ${{ env.MESA_BUILD_DIR }}                              ^
-          ${{ env.MESA_SOURCE_DIR }}                             ^
-           --prefix="${{ env.MESA_INSTALL_DIR }}"                ^
-           --default-library=static                              ^
-          -D buildtype=release                                   ^
-          -D platforms=windows                                   ^
-          -D b_vscrt=mt                                          ^
-          -D b_ndebug=true                                       ^
-          -D llvm=enabled                                        ^
-          -D shared-llvm=disabled                                ^
-          -D gallium-drivers=softpipe,llvmpipe                   ^
-          -D vulkan-drivers=swrast                               ^
+          meson setup                                                         ^
+          ${{ env.MESA_BUILD_DIR }}                                           ^
+          ${{ env.MESA_SOURCE_DIR }}                                          ^
+           --prefix="${{ env.MESA_INSTALL_DIR }}"                             ^
+           --default-library=static                                           ^
+          -D buildtype=release                                                ^
+          -D platforms=windows                                                ^
+          -D b_vscrt=mt                                                       ^
+          -D b_ndebug=true                                                    ^
+          -D llvm=enabled                                                     ^
+          -D shared-llvm=disabled                                             ^
+          -D gallium-drivers=llvmpipe                                         ^
+          -D vulkan-drivers=swrast                                            ^
+          -D video-codecs=                                                    ^
+          -D egl=enabled                                                      ^
+          -D gles1=enabled                                                    ^
+          -D gles2=enabled                                                    ^
+          -D c_args="-wd4189 -wd4319"                                          ^
+          -D cpp_args="-wd4189 -wd4319"                                        ^
           -D build-tests=false
 
       - name: 🙏 [MESA] Build + Install
@@ -320,24 +361,166 @@ jobs:
           ninja -C ${{ env.MESA_BUILD_DIR }}
           ninja -C ${{ env.MESA_BUILD_DIR }} install
 
-      # Versioning Pattern: "lavapipe-win64-24.3.4.zip"
-      - name: 🏷️ Versionize Artifact
+      - name: ❔ [MESA] Check install folder, to see if everything is present (after install)
+        run: |
+          dir /S /B ${{ env.MESA_INSTALL_DIR }}
+
+      # Adhere to the standard folder stucture for packaging: <install-folder> /bin /lib /share
+      - name: 📦 [MESA] Move Lavapipe driver to standalone folder for packaging
+        run: |
+          echo "Creating Lavapipe install folder: ${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
+          mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
+          mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin"
+          mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib"
+          mkdir "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d"
+          echo "Copying Lavapipe files from install to standalone folder."
+          copy "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin\vulkan_lvp.dll"
+          copy "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib\vulkan_lvp.lib"
+          copy "${{ env.MESA_INSTALL_DIR }}\share\vulkan\icd.d\lvp_icd.x86_64.json" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d\lvp_icd.x86_64.json"
+          echo "Removing Lavapipe files from install folder to allow packaging of LLVMPipe only."
+          del "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll"
+          del "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib"
+          rmdir /S /Q "${{ env.MESA_INSTALL_DIR }}\share"
+          echo "Done. Lavapipe ready for packaging."
+
+      - name: ❔ [MESA] Check install folder, to see if everything is present (after moving)
+        run: |
+          dir /S /B ${{ env.MESA_INSTALL_DIR }}
+
+      - name: 🖋️ [MESA] Setup (d3d12, microsoft-experimental = dzn)
+        env:
+          CC:  "sccache cl"
+          CXX: "sccache cl"
+          CPPFLAGS: "-I${{ env.DIRECTX_SDK_DIR }}/include -I${{ env.GLSLANG_DIR }}/include"
+          LDFLAGS:  "-L${{ env.DIRECTX_SDK_DIR }}/lib -L${{ env.GLSLANG_DIR }}/lib"
+        run: |
+          meson setup                                                         ^
+          ${{ env.MESA_BUILD_DIR }}-d3d12                                     ^
+          ${{ env.MESA_SOURCE_DIR }}                                          ^
+           --prefix="${{ env.MESA_INSTALL_DIR_D3D12 }}" ^
+           --default-library=static                                           ^
+          -D buildtype=release                                                ^
+          -D platforms=windows                                                ^
+          -D b_vscrt=mt                                                       ^
+          -D b_ndebug=true                                                    ^
+          -D llvm=enabled                                                     ^
+          -D shared-llvm=disabled                                             ^
+          -D gallium-mediafoundation=enabled                                  ^
+          -D gallium-drivers=d3d12                                            ^
+          -D vulkan-drivers=microsoft-experimental                            ^
+          -D video-codecs=all                                                 ^
+          -D mediafoundation-codecs=all                                       ^
+          -D egl=enabled                                                      ^
+          -D gles1=enabled                                                    ^
+          -D gles2=enabled                                                    ^
+          -D c_args="-wd4189 -wd4319"                                          ^
+          -D cpp_args="-wd4189 -wd4319"                                        ^
+          -D build-tests=false
+
+      - name: 🙏 [MESA] Build + Install
+        run: |
+          ninja -C ${{ env.MESA_BUILD_DIR }}-d3d12
+          ninja -C ${{ env.MESA_BUILD_DIR }}-d3d12 install
+
+      # Copy the DXIL signing library (dxil.dll) from the system to the installation folder, if it exists.
+      # Example location: C:\Program Files (x86)\Windows Kits\10\Redist\D3D\arm64\dxil.dll
+      - name: Copy dxil.dll to install folder, if present
+        run: |
+          if exist "%ProgramFiles(x86)%\Windows Kits\10\Redist\D3D\${{ matrix.config.artifact_arch }}\dxil.dll" (
+            echo "Copying dxil.dll from Windows Kits Redist folder."
+            copy /y "%ProgramFiles(x86)%\Windows Kits\10\Redist\D3D\${{ matrix.config.artifact_arch }}\dxil.dll" ${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\
+          ) else if exist "%WindowsSdkVerBinPath%${{ matrix.config.artifact_arch }}\dxil.dll" (
+            echo "Copying dxil.dll from Windows SDK Bin folder."
+            copy /y "%WindowsSdkVerBinPath%${{ matrix.config.artifact_arch }}\dxil.dll" ${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\
+          )
+
+      - name: ❔ [MESA] Check install folder, to see if everything is present (after install)
+        run: |
+          dir /S /B ${{ env.MESA_INSTALL_DIR_D3D12 }}
+
+      - name: 📦 [MESA] Move microsoft-experimental (dzn) driver to standalone folder for packaging
+        run: |
+          echo "Creating microsoft-experimental (dzn) install folder: ${{ env.MESA_INSTALL_DIR_D3D12 }}"
+          mkdir "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn"
+          mkdir "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\bin"
+          mkdir "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\lib"
+          mkdir "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\share\vulkan\icd.d"
+          echo "Copying dzn files from install to standalone folder."
+          copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\vulkan_dzn.dll" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\bin\vulkan_dzn.dll"
+          copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\lib\vulkan_dzn.lib" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\lib\vulkan_dzn.lib"
+          copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\share\vulkan\icd.d\dzn_icd.${{ matrix.config.artifact_arch }}.json" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\share\vulkan\icd.d\dzn_icd.${{ matrix.config.artifact_arch }}.json"
+          echo "Removing dzn files from install folder to allow packaging of d3d12 only.
+          del "${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\vulkan_dzn.dll
+          del "${{ env.MESA_INSTALL_DIR_D3D12 }}\lib\vulkan_dzn.lib
+          rmdir /S /Q "${{ env.MESA_INSTALL_DIR_D3D12 }}\share"
+          echo "Done. Microsoft-experimental (dzn) ready for packaging."
+
+      # Versioning Pattern: "lavapipe-x64-24.3.4.zip"
+      - name: 🏷️ Versionize Artifacts
         shell: pwsh
         run: |
           $version = $env:MESA_VERSION_TAG -replace "^mesa-", ""
-          echo "MESA_LVP_VERSION=$version" >> $env:GITHUB_ENV
-          echo "MESA_LVP_ARTIFACT_NAME=lavapipe-win64-$version" >> $env:GITHUB_ENV
-          echo "MESA_LVP_ARTIFACT_ZIPFILE=lavapipe-win64-$version.zip" >> $env:GITHUB_ENV
+          echo "MESA_LAVAPIPE_VERSION=$version" >> $env:GITHUB_ENV
+          echo "MESA_LAVAPIPE_ARTIFACT_NAME=lavapipe-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
+          echo "MESA_LAVAPIPE_ARTIFACT_ZIPFILE=lavapipe-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
+          echo "MESA_LLVMPIPE_ARTIFACT_NAME=llvmpipe-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
+          echo "MESA_LLVMPIPE_ARTIFACT_ZIPFILE=llvmpipe-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
+          echo "MESA_D3D12_ARTIFACT_NAME=d3d12-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
+          echo "MESA_D3D12_ARTIFACT_ZIPFILE=d3d12-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
+          echo "MESA_DZN_ARTIFACT_NAME=dzn-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
+          echo "MESA_DZN_ARTIFACT_ZIPFILE=dzn-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
 
-      - name: 📦 Package Artifact
+      - name: 📦 Package Artifact - LavaPipe (Vulkan)
         run: |
-          7z a -tzip -mx9 "${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR }}\*"
+          dir /S /B "${{ env.MESA_INSTALL_DIR }}"
+          7z a -tzip -mx9 "${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\*"
+          rmdir /S /Q "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}"
 
-      - name: 📦 🚀 Upload Artifact
+      - name: 📦 Package Artifact - LLVMPipe (libgl-gdi/OpenGL + GLESv1 + GLESv2 + EGL + wgl/libgallium)
+        run: |
+          dir /S /B "${{ env.MESA_INSTALL_DIR }}"
+          7z a -tzip -mx9 "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR }}\*"
+
+      - name: 📦 Package Artifact - Microsoft-Experimental (dzn)
+        run: |
+          dir /S /B "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn"
+          7z a -tzip -mx9 "${{ env.MESA_DZN_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\*"
+          rmdir /S /Q "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn"
+
+      - name: 📦 Package Artifact - D3D12 (Direct3D 12)
+        run: |
+          dir /S /B "${{ env.MESA_INSTALL_DIR_D3D12 }}"
+          7z a -tzip -mx9 "${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_D3D12 }}\*"
+
+      - name: 📦 🚀 Upload Artifact - LavaPipe
         uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
         with:
-          name: ${{ env.MESA_LVP_ARTIFACT_NAME }}
-          path: ${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}
+          name: ${{ env.MESA_LAVAPIPE_ARTIFACT_NAME }}
+          path: ${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}
+          compression-level: 0
+          retention-days: 3
+
+      - name: 📦 🚀 Upload Artifact - LLVMPipe
+        uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
+        with:
+          name: ${{ env.MESA_LLVMPIPE_ARTIFACT_NAME }}
+          path: ${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}
+          compression-level: 0
+          retention-days: 3
+
+      - name: 📦 🚀 Upload Artifact - Microsoft-Experimental (dzn)
+        uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
+        with:
+          name: ${{ env.MESA_DZN_ARTIFACT_NAME }}
+          path: ${{ env.MESA_DZN_ARTIFACT_ZIPFILE }}
+          compression-level: 0
+          retention-days: 3
+
+      - name: 📦 🚀 Upload Artifact - D3D12
+        uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
+        with:
+          name: ${{ env.MESA_D3D12_ARTIFACT_NAME }}
+          path: ${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}
           compression-level: 0
           retention-days: 3
 
@@ -355,11 +538,15 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ env.RELEASE_VERSION_TAG }}"
-          $new_notes = "• Mesa Lavapipe for Windows (x64, VC17) ${{ env.MESA_LVP_VERSION }}"
+          $new_notes = "• Mesa Lavapipe for Windows (${{ matrix.config.artifact_arch }}, VC18) ${{ env.MESA_LAVAPIPE_VERSION }}"
+          $new_notes += "`n• Mesa LLVMPipe for Windows (${{ matrix.config.artifact_arch }}, VC18) ${{ env.MESA_LAVAPIPE_VERSION }}"
+          $new_notes += "`n• Mesa D3D12 for Windows (${{ matrix.config.artifact_arch }}, VC18)"
+          $new_notes += "`n• Mesa DZN (Microsoft Experimental) for Windows (${{ matrix.config.artifact_arch }}, VC18)"
           $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
           if ($?) {
             Write-Host "✅ Release $tag already exists. Appending new notes."
             if ($null -eq $existing_notes) { $existing_notes = "" }
+            $existing_notes = $existing_notes.TrimEnd()
             $updated_notes = "$existing_notes`n`n$new_notes"
             gh release edit $tag --notes "$updated_notes"
           } else {
@@ -377,4 +564,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LVP_ARTIFACT_ZIPFILE }}" --clobber
+          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_DZN_ARTIFACT_ZIPFILE }}" "${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}" --clobber
