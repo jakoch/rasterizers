@@ -43,7 +43,7 @@ jobs:
 
 # ---------------------------------------------------------------------------------------
 
-    name: "Swiftshader - Win VC17"
+    name: "Swiftshader - Win VC18"
 
     # https://github.com/actions/runner-images
     # Installed Software: https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
@@ -68,7 +68,9 @@ jobs:
           path: swiftshader
 
       - name: 🛠️ Setup Visual Studio Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: TheMrMilchmann/setup-msvc-dev@v4 # https://github.com/TheMrMilchmann/setup-msvc-dev
+        with:
+          arch: x64
 
       # https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022
       #- name: 🛠️ Setup Visual Studio Developer Command Prompt
@@ -89,7 +91,7 @@ jobs:
           restore-keys: |
             swift-build-${{ github.ref }}
             swift-build-
-      
+
       # -DCMAKE_POLICY_VERSION_MINIMUM=3.5 was added for third_party/marl/CMakeLists.txt min version issue
       - name: 🖋️ CMake ➔ Configure
         run: |
@@ -97,6 +99,7 @@ jobs:
             -G Ninja                                    ^
             -DCMAKE_BUILD_TYPE=Release                  ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache       ^
+            -DREACTOR_BACKEND=Subzero                   ^
             -DSWIFTSHADER_BUILD_VULKAN=ON               ^
             -DSWIFTSHADER_BUILD_EGL=OFF                 ^
             -DSWIFTSHADER_BUILD_GLESv2=OFF              ^
@@ -168,6 +171,7 @@ jobs:
           if ($?) {
             echo "✅ Release $tag already exists. Appending new notes."
             if ($null -eq $existing_notes) { $existing_notes = "" }
+            $existing_notes = $existing_notes.TrimEnd()
             $updated_notes = "$existing_notes`n$new_notes"
             gh release edit $tag --notes "$updated_notes"
           } else {

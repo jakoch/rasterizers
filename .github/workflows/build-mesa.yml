@@ -43,7 +43,7 @@ jobs:
 
 # ---------------------------------------------------------------------------------------
 
-    name: "Windows VC17"
+    name: "Windows VC18"
 
     # https://github.com/actions/runner-images
     # Installed Software:
@@ -120,7 +120,7 @@ jobs:
     # - cmake
     # - python, pip
     # - rustc
-    # - msvc VC17
+    # - msvc VC18
 
     steps:
       - name: Runner OS
@@ -538,10 +538,10 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ env.RELEASE_VERSION_TAG }}"
-          $new_notes = "• Mesa Lavapipe for Windows (${{ matrix.config.artifact_arch }}, VC17) ${{ env.MESA_LAVAPIPE_VERSION }}"
-          $new_notes += "`n• Mesa LLVMPipe for Windows (${{ matrix.config.artifact_arch }}, VC17) ${{ env.MESA_LAVAPIPE_VERSION }}"
-          $new_notes += "`n• Mesa D3D12 for Windows (${{ matrix.config.artifact_arch }}, VC17)"
-          $new_notes += "`n• Mesa DZN (Microsoft-Experimental) for Windows (${{ matrix.config.artifact_arch }}, VC17)"
+          $new_notes = "• Mesa Lavapipe for Windows (${{ matrix.config.artifact_arch }}, VC18) ${{ env.MESA_LAVAPIPE_VERSION }}"
+          $new_notes += "`n• Mesa LLVMPipe for Windows (${{ matrix.config.artifact_arch }}, VC18) ${{ env.MESA_LAVAPIPE_VERSION }}"
+          $new_notes += "`n• Mesa D3D12 for Windows (${{ matrix.config.artifact_arch }}, VC18)"
+          $new_notes += "`n• Mesa DZN (Microsoft Experimental) for Windows (${{ matrix.config.artifact_arch }}, VC18)"
           $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
           if ($?) {
             Write-Host "✅ Release $tag already exists. Appending new notes."
