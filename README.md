@@ -9,7 +9,10 @@
 - [Downloads](#downloads)
   - [How to get the latest version of llvmpipe or swiftshader from this repository?](#how-to-get-the-latest-version-of-llvmpipe-or-swiftshader-from-this-repository)
   - [Download latest version of Swiftshader](#download-latest-version-of-swiftshader)
-  - [Download latest version of LLVMPipe](#download-latest-version-of-llvmpipe)
+  - [Download latest version of Lavapipe (Vulkan)](#download-latest-version-of-lavapipe-vulkan)
+  - [Download latest version of LLVMPipe (OpenGL)](#download-latest-version-of-llvmpipe-opengl)
+  - [Download latest version of dzn (microsoft-experimental, Vulkan on D3D12)](#download-latest-version-of-dzn-microsoft-experimental-vulkan-on-d3d12)
+  - [Download latest version of Zink (OpenGL on Vulkan)](#download-latest-version-of-zink-opengl-on-vulkan)
 - [Links](#links)
   - [Mesa](#mesa)
   - [Swiftshader](#swiftshader)
@@ -90,8 +93,12 @@ This requires two requests:
 1. Fetch `versions.json` from the latest GitHub release:
    https://github.com/jakoch/rasterizers/releases/latest/download/versions.json
 2. Extract the latest download URL from `version.json`:
-   - For SwiftShader: `.latest["swiftshader-win64"].url`
-   - For LLVMpipe: `.latest["mesa-lavapipe-win64"].url`
+   - For SwiftShader (x64): `.latest["swiftshader-win64"].url`
+   - For Lavapipe (Vulkan): `.latest["lavapipe-x64"].url` or `.latest["lavapipe-arm64"].url`
+   - For LLVMPipe (OpenGL): `.latest["llvmpipe-x64"].url` or `.latest["llvmpipe-arm64"].url`
+   - For D3D12: `.latest["d3d12-x64"].url` or `.latest["d3d12-arm64"].url`
+   - For DZN: `.latest["dzn-x64"].url` or `.latest["dzn-arm64"].url`
+   - For Zink (OpenGL on Vulkan): `.latest["zink-x64"].url` or `.latest["zink-arm64"].url`
 3. Download the file using the extracted URL.
 
 ### Download latest version of Swiftshader
@@ -101,11 +108,35 @@ swiftshader_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/rele
 curl -sLO "$swiftshader_latest_version"
 ```
 
-### Download latest version of LLVMPipe
+### Download latest version of Lavapipe (Vulkan)
 
 ```sh
-llvmpipe_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/releases/latest/download/versions.json | jq -r ".latest[\"mesa-lavapipe-win64\"].url")
+lavapipe_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/releases/latest/download/versions.json | jq -r ".latest[\"lavapipe-x64\"].url")
+curl -sLO "$lavapipe_latest_version"
+```
+
+### Download latest version of LLVMPipe (OpenGL)
+
+```sh
+llvmpipe_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/releases/latest/download/versions.json | jq -r ".latest[\"llvmpipe-x64\"].url")
 curl -sLO "$llvmpipe_latest_version"
+```
+
+### Download latest version of dzn (microsoft-experimental, Vulkan on D3D12)
+
+```sh
+dzn_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/releases/latest/download/versions.json | jq -r ".latest[\"dzn-x64\"].url")
+curl -sLO "$dzn_latest_version"
+```
+
+### Download latest version of Zink (OpenGL on Vulkan)
+
+Zink ships no Vulkan driver of its own. It loads `vulkan-1.dll` at runtime and
+uses whichever ICD the loader finds, so install Lavapipe or DZN alongside it.
+
+```sh
+zink_latest_version=$(curl -sL https://github.com/jakoch/rasterizers/releases/latest/download/versions.json | jq -r ".latest[\"zink-x64\"].url")
+curl -sLO "$zink_latest_version"
 ```
 
 ## Links
