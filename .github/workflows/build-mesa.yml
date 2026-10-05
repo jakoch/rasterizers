@@ -80,7 +80,7 @@ jobs:
     # DX-Headers: https://github.com/microsoft/DirectX-Headers/releases
     # GLSLang:    https://github.com/KhronosGroup/glslang/releases
     env:
-      MESA_VERSION_TAG:   'mesa-26.1.5'
+      MESA_VERSION_TAG:   'mesa-26.2.4'
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
@@ -94,9 +94,9 @@ jobs:
       LLVM_BUILD_DIR:     ${{github.workspace}}\llvm-project\llvm\build
       LLVM_INSTALL_DIR:   ${{github.workspace}}\llvm-project\llvm\install
       LLVM_DEPS_DIR:      ${{github.workspace}}\llvm-project\third-party
-      DIRECTX_TAG:        'v1.619.4'
+      DIRECTX_TAG:        'v1.619.5'
       DIRECTX_SDK_DIR:    ${{github.workspace}}\directx
-      GLSLANG_TAG:        '16.3.0'
+      GLSLANG_TAG:        '16.6.0'
       GLSLANG_DIR:        ${{github.workspace}}\glslang
 
     defaults:
