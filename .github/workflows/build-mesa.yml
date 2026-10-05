@@ -8,7 +8,7 @@
 # This file is part of https://github.com/jakoch/rasterizers
 #
 
-name: "Build on Windows: Mesa Lavapipe"
+name: "Build on Windows: Mesa"
 
 on:
   # You can manually run this workflow.
@@ -79,24 +79,30 @@ jobs:
     # MESA:       https://docs.mesa3d.org/relnotes.html
     # DX-Headers: https://github.com/microsoft/DirectX-Headers/releases
     # GLSLang:    https://github.com/KhronosGroup/glslang/releases
+    # Tags are mutable: we pin every source to an immutable commit or checksum.
     env:
-      MESA_VERSION_TAG:   'mesa-26.1.5'
+      MESA_VERSION_TAG:   'mesa-26.2.4'
+      MESA_COMMIT:        '96cb43121031992b85767f9c1be8f3f48e22b1d2'
       MESA_SOURCE_DIR:    ${{github.workspace}}\mesa
       MESA_BUILD_DIR:     ${{github.workspace}}\mesa\build
       MESA_INSTALL_DIR:   ${{github.workspace}}\mesa\install
       MESA_INSTALL_DIR_LAVAPIPE: ${{github.workspace}}\mesa\install\lavapipe-${{ matrix.config.artifact_arch }}
       MESA_INSTALL_DIR_LLVMPIPE: ${{github.workspace}}\mesa\install\llvmpipe-${{ matrix.config.artifact_arch }}
       MESA_INSTALL_DIR_D3D12: ${{github.workspace}}\mesa\install\d3d12-${{ matrix.config.artifact_arch }}
+      MESA_INSTALL_DIR_ZINK: ${{github.workspace}}\mesa\install\zink-${{ matrix.config.artifact_arch }}
       LLVM_VERSION:       '22.1.8'
+      LLVM_SHA256:        '922f1817a0df7b1489272d18134ee0087a8b068828f87ac63b9861b1a9965888'
       LLVM_PROJECT_DIR:   ${{github.workspace}}\llvm-project
       LLVM_CMAKE_DIR:     ${{github.workspace}}\llvm-project\cmake
       LLVM_SOURCE_DIR:    ${{github.workspace}}\llvm-project\llvm
       LLVM_BUILD_DIR:     ${{github.workspace}}\llvm-project\llvm\build
       LLVM_INSTALL_DIR:   ${{github.workspace}}\llvm-project\llvm\install
       LLVM_DEPS_DIR:      ${{github.workspace}}\llvm-project\third-party
-      DIRECTX_TAG:        'v1.619.4'
+      DIRECTX_TAG:        'v1.619.5'
+      DIRECTX_COMMIT:     'ee479f0bd5f7b884f202bcf0c3f076cc050dd256'
       DIRECTX_SDK_DIR:    ${{github.workspace}}\directx
-      GLSLANG_TAG:        '16.3.0'
+      GLSLANG_TAG:        '16.6.0'
+      GLSLANG_COMMIT:     'e1b562a8bed273a02f30b59b66a5d499793cede5'
       GLSLANG_DIR:        ${{github.workspace}}\glslang
 
     defaults:
@@ -131,9 +137,21 @@ jobs:
       - name: 🤘 Checkout Code
         uses: actions/checkout@v7 # https://github.com/actions/checkout
 
+      # Fetch the pinned commit instead of the mutable tag, then assert it.
       - name: 🤘 Checkout Code - https://gitlab.freedesktop.org/mesa/mesa
         run: |
-          git clone --depth=1 --no-tags --single-branch --branch ${{ env.MESA_VERSION_TAG }} https://gitlab.freedesktop.org/mesa/mesa.git mesa
+          setlocal enabledelayedexpansion
+          git init -q mesa
+          cd mesa
+          git remote add origin https://gitlab.freedesktop.org/mesa/mesa.git
+          git fetch -q --depth 1 origin ${{ env.MESA_COMMIT }}
+          git checkout -q FETCH_HEAD
+          for /f "tokens=*" %%h in ('git rev-parse HEAD') do set "MESA_HEAD=%%h"
+          if "!MESA_HEAD!" neq "${{ env.MESA_COMMIT }}" (
+            echo Expected ${{ env.MESA_COMMIT }}, got !MESA_HEAD!
+            exit /b 1
+          )
+          echo Verified Mesa at %MESA_HEAD%
 
       - name: 🛠️ Setup Visual Studio Developer Command Prompt
         uses: TheMrMilchmann/setup-msvc-dev@v4 # https://github.com/TheMrMilchmann/setup-msvc-dev
@@ -172,7 +190,16 @@ jobs:
       - name: 🔽 [LLVM] Install LLVM into llvm-project folder
         working-directory: ${{ env.LLVM_PROJECT_DIR }}
         run: |
+          setlocal enabledelayedexpansion
           curl -sfL -o llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz
+          for /f "tokens=*" %%s in ('certutil -hashfile llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz sha256 ^| findstr /v /c:"hash"') do set LLVM_HASH=%%s
+          if "!LLVM_HASH!" neq "${{ env.LLVM_SHA256 }}" (
+            echo SHA256 mismatch for llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz
+            echo Expected: ${{ env.LLVM_SHA256 }}
+            echo Actual:   !LLVM_HASH!
+            exit /b 1
+          )
+          echo Verified LLVM ${{ env.LLVM_VERSION }} tarball.
           tar -xJf llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz --strip-components=1
           del llvm-project-${{ env.LLVM_VERSION }}.src.tar.xz
 
@@ -279,8 +306,18 @@ jobs:
           CC:  "sccache cl"
           CXX: "sccache cl"
         run: |
-          git clone --depth=1 --no-tags --single-branch --branch ${{ env.DIRECTX_TAG }} https://github.com/microsoft/DirectX-Headers
+          setlocal enabledelayedexpansion
+          git init -q DirectX-Headers
           cd DirectX-Headers
+          git remote add origin https://github.com/microsoft/DirectX-Headers
+          git fetch -q --depth 1 origin ${{ env.DIRECTX_COMMIT }}
+          git checkout -q FETCH_HEAD
+          for /f "tokens=*" %%h in ('git rev-parse HEAD') do set "DXH_HEAD=%%h"
+          if "!DXH_HEAD!" neq "${{ env.DIRECTX_COMMIT }}" (
+            echo Expected ${{ env.DIRECTX_COMMIT }}, got !DXH_HEAD!
+            exit /b 1
+          )
+          echo Verified DirectX-Headers at %DXH_HEAD%
           meson setup build --backend=ninja --buildtype=release -Dbuild-test=false --prefix="${{ env.DIRECTX_SDK_DIR }}"
           meson install -C build
           cd ..
@@ -300,8 +337,18 @@ jobs:
       # update_glslang_sources fetches the dependencies: googletest, SPIRV-Tools, SPIRV-Headers
       - name: 🔽 [GLSLANG] Build + Install glslang
         run: |
-          git clone --depth=1 --no-tags --single-branch --branch ${{ env.GLSLANG_TAG }} https://github.com/KhronosGroup/glslang
+          setlocal enabledelayedexpansion
+          git init -q glslang
           cd glslang
+          git remote add origin https://github.com/KhronosGroup/glslang
+          git fetch -q --depth 1 origin ${{ env.GLSLANG_COMMIT }}
+          git checkout -q FETCH_HEAD
+          for /f "tokens=*" %%h in ('git rev-parse HEAD') do set "GLSLANG_HEAD=%%h"
+          if "!GLSLANG_HEAD!" neq "${{ env.GLSLANG_COMMIT }}" (
+            echo Expected ${{ env.GLSLANG_COMMIT }}, got !GLSLANG_HEAD!
+            exit /b 1
+          )
+          echo Verified glslang at %GLSLANG_HEAD%
           python update_glslang_sources.py
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ env.GLSLANG_DIR }}"
           cmake --build build --target install
@@ -376,7 +423,7 @@ jobs:
           echo "Copying Lavapipe files from install to standalone folder."
           copy "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\bin\vulkan_lvp.dll"
           copy "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\lib\vulkan_lvp.lib"
-          copy "${{ env.MESA_INSTALL_DIR }}\share\vulkan\icd.d\lvp_icd.x86_64.json" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d\lvp_icd.x86_64.json"
+          copy "${{ env.MESA_INSTALL_DIR }}\share\vulkan\icd.d\lvp_icd.${{ matrix.config.artifact_arch }}.json" "${{ env.MESA_INSTALL_DIR_LAVAPIPE }}\share\vulkan\icd.d\lvp_icd.${{ matrix.config.artifact_arch }}.json"
           echo "Removing Lavapipe files from install folder to allow packaging of LLVMPipe only."
           del "${{ env.MESA_INSTALL_DIR }}\bin\vulkan_lvp.dll"
           del "${{ env.MESA_INSTALL_DIR }}\lib\vulkan_lvp.lib"
@@ -403,7 +450,7 @@ jobs:
           -D platforms=windows                                                ^
           -D b_vscrt=mt                                                       ^
           -D b_ndebug=true                                                    ^
-          -D llvm=enabled                                                     ^
+          -D llvm=disabled                                                    ^
           -D shared-llvm=disabled                                             ^
           -D gallium-mediafoundation=enabled                                  ^
           -D gallium-drivers=d3d12                                            ^
@@ -449,11 +496,50 @@ jobs:
           copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\vulkan_dzn.dll" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\bin\vulkan_dzn.dll"
           copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\lib\vulkan_dzn.lib" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\lib\vulkan_dzn.lib"
           copy "${{ env.MESA_INSTALL_DIR_D3D12 }}\share\vulkan\icd.d\dzn_icd.${{ matrix.config.artifact_arch }}.json" "${{ env.MESA_INSTALL_DIR_D3D12 }}\dzn\share\vulkan\icd.d\dzn_icd.${{ matrix.config.artifact_arch }}.json"
-          echo "Removing dzn files from install folder to allow packaging of d3d12 only.
-          del "${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\vulkan_dzn.dll
-          del "${{ env.MESA_INSTALL_DIR_D3D12 }}\lib\vulkan_dzn.lib
+          echo "Removing dzn files from install folder to allow packaging of d3d12 only."
+          del "${{ env.MESA_INSTALL_DIR_D3D12 }}\bin\vulkan_dzn.dll"
+          del "${{ env.MESA_INSTALL_DIR_D3D12 }}\lib\vulkan_dzn.lib"
           rmdir /S /Q "${{ env.MESA_INSTALL_DIR_D3D12 }}\share"
           echo "Done. Microsoft-experimental (dzn) ready for packaging."
+
+      # Zink is an OpenGL-on-Vulkan gallium driver. It ships no driver of its own:
+      # at runtime it loads vulkan-1.dll and uses whichever ICD the loader finds,
+      # so it is shipped alongside Lavapipe/DZN rather than replacing them.
+      - name: 🖋️ [MESA] Setup (zink)
+        env:
+          CC:  "sccache cl"
+          CXX: "sccache cl"
+          CPPFLAGS: "-I${{ env.DIRECTX_SDK_DIR }}/include -I${{ env.GLSLANG_DIR }}/include"
+          LDFLAGS:  "-L${{ env.DIRECTX_SDK_DIR }}/lib -L${{ env.GLSLANG_DIR }}/lib"
+        run: |
+          meson setup                                                         ^
+          ${{ env.MESA_BUILD_DIR }}-zink                                       ^
+          ${{ env.MESA_SOURCE_DIR }}                                          ^
+           --prefix="${{ env.MESA_INSTALL_DIR_ZINK }}"                         ^
+           --default-library=static                                           ^
+          -D buildtype=release                                                ^
+          -D platforms=windows                                                ^
+          -D b_vscrt=mt                                                       ^
+          -D b_ndebug=true                                                    ^
+          -D llvm=disabled                                                    ^
+          -D gallium-drivers=zink                                             ^
+          -D vulkan-drivers=                                                  ^
+          -D video-codecs=                                                    ^
+          -D egl=enabled                                                      ^
+          -D gles1=enabled                                                    ^
+          -D gles2=enabled                                                    ^
+          -D c_args="-wd4189 -wd4319"                                          ^
+          -D cpp_args="-wd4189 -wd4319"                                        ^
+          -D build-tests=false
+
+      - name: 🙏 [MESA] Build + Install (zink)
+        run: |
+          ninja -C ${{ env.MESA_BUILD_DIR }}-zink
+          ninja -C ${{ env.MESA_BUILD_DIR }}-zink install
+
+      - name: ❔ [MESA] Check install folder, to see if everything is present (after install)
+        run: |
+          dir /S /B ${{ env.MESA_INSTALL_DIR_ZINK }}
 
       # Versioning Pattern: "lavapipe-x64-24.3.4.zip"
       - name: 🏷️ Versionize Artifacts
@@ -463,12 +549,15 @@ jobs:
           echo "MESA_LAVAPIPE_VERSION=$version" >> $env:GITHUB_ENV
           echo "MESA_LAVAPIPE_ARTIFACT_NAME=lavapipe-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
           echo "MESA_LAVAPIPE_ARTIFACT_ZIPFILE=lavapipe-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
+          echo "MESA_LLVMPIPE_VERSION=$version" >> $env:GITHUB_ENV
           echo "MESA_LLVMPIPE_ARTIFACT_NAME=llvmpipe-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
           echo "MESA_LLVMPIPE_ARTIFACT_ZIPFILE=llvmpipe-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
           echo "MESA_D3D12_ARTIFACT_NAME=d3d12-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
           echo "MESA_D3D12_ARTIFACT_ZIPFILE=d3d12-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
           echo "MESA_DZN_ARTIFACT_NAME=dzn-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
           echo "MESA_DZN_ARTIFACT_ZIPFILE=dzn-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
+          echo "MESA_ZINK_ARTIFACT_NAME=zink-${{ matrix.config.artifact_arch }}-$version" >> $env:GITHUB_ENV
+          echo "MESA_ZINK_ARTIFACT_ZIPFILE=zink-${{ matrix.config.artifact_arch }}-$version.zip" >> $env:GITHUB_ENV
 
       - name: 📦 Package Artifact - LavaPipe (Vulkan)
         run: |
@@ -491,6 +580,11 @@ jobs:
         run: |
           dir /S /B "${{ env.MESA_INSTALL_DIR_D3D12 }}"
           7z a -tzip -mx9 "${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_D3D12 }}\*"
+
+      - name: 📦 Package Artifact - Zink (OpenGL on Vulkan)
+        run: |
+          dir /S /B "${{ env.MESA_INSTALL_DIR_ZINK }}"
+          7z a -tzip -mx9 "${{ env.MESA_ZINK_ARTIFACT_ZIPFILE }}" "${{ env.MESA_INSTALL_DIR_ZINK }}\*"
 
       - name: 📦 🚀 Upload Artifact - LavaPipe
         uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
@@ -524,6 +618,14 @@ jobs:
           compression-level: 0
           retention-days: 3
 
+      - name: 📦 🚀 Upload Artifact - Zink
+        uses: actions/upload-artifact@v7 # https://github.com/actions/upload-artifact
+        with:
+          name: ${{ env.MESA_ZINK_ARTIFACT_NAME }}
+          path: ${{ env.MESA_ZINK_ARTIFACT_ZIPFILE }}
+          compression-level: 0
+          retention-days: 3
+
       # This is a date based version for repeatable releases.
       - name: 🏷️ Set Rolling Release Version for Tag
         shell: pwsh
@@ -539,9 +641,10 @@ jobs:
         run: |
           $tag = "${{ env.RELEASE_VERSION_TAG }}"
           $new_notes = "• Mesa Lavapipe for Windows (${{ matrix.config.artifact_arch }}, VC18) ${{ env.MESA_LAVAPIPE_VERSION }}"
-          $new_notes += "`n• Mesa LLVMPipe for Windows (${{ matrix.config.artifact_arch }}, VC18) ${{ env.MESA_LAVAPIPE_VERSION }}"
+          $new_notes += "`n• Mesa LLVMPipe for Windows (${{ matrix.config.artifact_arch }}, VC18) ${{ env.MESA_LLVMPIPE_VERSION }}"
           $new_notes += "`n• Mesa D3D12 for Windows (${{ matrix.config.artifact_arch }}, VC18)"
           $new_notes += "`n• Mesa DZN (Microsoft Experimental) for Windows (${{ matrix.config.artifact_arch }}, VC18)"
+          $new_notes += "`n• Mesa Zink (OpenGL on Vulkan) for Windows (${{ matrix.config.artifact_arch }}, VC18)"
           $existing_notes = gh release view $tag --json body --jq ".body" 2>$null
           if ($?) {
             Write-Host "✅ Release $tag already exists. Appending new notes."
@@ -564,4 +667,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_DZN_ARTIFACT_ZIPFILE }}" "${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}" --clobber
+          gh release upload "${{ env.RELEASE_VERSION_TAG }}" "${{ env.MESA_LLVMPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_LAVAPIPE_ARTIFACT_ZIPFILE }}" "${{ env.MESA_DZN_ARTIFACT_ZIPFILE }}" "${{ env.MESA_D3D12_ARTIFACT_ZIPFILE }}" "${{ env.MESA_ZINK_ARTIFACT_ZIPFILE }}" --clobber

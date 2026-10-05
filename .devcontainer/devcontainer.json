@@ -1,0 +1,38 @@
+{
+  "name": "C++ DevBox",
+  "image": "ghcr.io/jakoch/cpp-devbox:trixie-20260927",
+  "customizations": {
+    "vscode": {
+      // Set *default* container specific settings.json values on container create.
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true
+      },
+      "extensions": [
+        // EditorConfig
+        "EditorConfig.EditorConfig",
+        // Git + Github
+        "GitHub.vscode-pull-request-github",
+        // C++
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cpptools-themes",
+        // CMake
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        // Testing
+        "matepek.vscode-catch2-test-adapter",
+        "ms-vscode.test-adapter-converter",
+        "hbenl.vscode-test-explorer",
+        // LLVM
+        "vadimcn.vscode-lldb",
+        // Some additional extensions
+        "Gruntfuggly.todo-tree",
+        "aaron-bond.better-comments",
+        "adam-bender.commit-message-editor",
+        "mhutchie.git-graph"
+      ]
+    }
+  }
+}

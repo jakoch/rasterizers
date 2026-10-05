@@ -116,11 +116,11 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo
             });
-            // Find workflow by name
-            const workflowName = "Clean Workflow Runs";
-            const workflow = workflowsData.workflows.find(w => w.name === workflowName);
+            // Find workflow by path: name changes don't break the lookup
+            const workflowPath = ".github/workflows/cleanup-workflows.yml";
+            const workflow = workflowsData.workflows.find(w => w.path === workflowPath);
             if (!workflow) {
-              console.log(`❌ No workflow named ${workflowName} found.`);
+              console.log(`❌ No workflow at ${workflowPath} found.`);
               return;
             }
             const workflowId = workflow.id;
